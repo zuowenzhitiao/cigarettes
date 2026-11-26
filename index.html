@@ -240,7 +240,7 @@
 
           <div id="inventoryAccordion" class="accordion-content">
             <div class="accordion-inner">
-              <div id="homeInventoryList" class="px-4 pb-4 pt-2 grid grid-cols-1 sm:grid-cols-2 gap-2.5 border-t border-slate-800/60"></div>
+              <div id="homeInventoryList" class="px-3 pb-3 pt-2.5 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 border-t border-slate-800/60"></div>
             </div>
           </div>
         </div>
@@ -262,7 +262,6 @@
                 <path d="M29 28 H35" stroke="#fffbeb" stroke-width="1.8" stroke-linecap="round" />
               </g>
             </svg>
-            <span class="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/25">按包</span>
           </div>
           <div class="mt-3">
             <div class="text-lg sm:text-xl font-bold text-white">进货</div>
@@ -281,7 +280,6 @@
                 <rect class="ember-tip" x="46" y="38" width="6" height="8" rx="1.5" fill="#fb7185" />
               </g>
             </svg>
-            <span class="text-xs font-medium px-2.5 py-1 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/25">按根</span>
           </div>
           <div class="mt-3">
             <div class="text-lg sm:text-xl font-bold text-white">出货</div>
@@ -453,8 +451,8 @@
         <div class="flex flex-wrap items-center gap-2">
           <select id="filterType" class="bg-slate-900 border border-slate-700 text-slate-200 text-xs sm:text-sm rounded-xl px-3 py-2 focus:outline-none focus:border-amber-400">
             <option value="all">全部类型</option>
-            <option value="in">进货 (买烟·按包)</option>
-            <option value="out">出货 (抽烟·按根)</option>
+            <option value="in">进货 (买烟)</option>
+            <option value="out">出货 (抽烟)</option>
           </select>
           <select id="filterBrand" class="bg-slate-900 border border-slate-700 text-slate-200 text-xs sm:text-sm rounded-xl px-3 py-2 focus:outline-none focus:border-amber-400">
             <option value="all">全部烟种</option>
@@ -699,20 +697,24 @@
 
   <script>
     const STORAGE_KEY = 'smoke_track_app_v3';
-    const BRAND_COLORS = ['#38bdf8', '#10b981', '#fb7185', '#f59e0b', '#a78bfa', '#f97316'];
+    const BRAND_COLORS = ['#38bdf8', '#10b981', '#fb7185', '#f59e0b', '#a78bfa', '#f97316', '#ef4444', '#94a3b8'];
 
-    // 依据真实外观与理化指标配置的 5 款常抽烟种
+    // 依据真实外观与理化指标配置的常抽烟种
     const DEFAULT_BRANDS = [
       { id: 'b_yinchai', name: '银钗', price: 22, sticksPerPack: 20, tar: 6, nicotine: 0.6, tag: '细支 · 薄荷', color: '#38bdf8', packStyle: 'yinchai', stockSticks: 0, isFrequent: true },
       { id: 'b_yinghehua', name: '硬荷花', price: 32, sticksPerPack: 20, tar: 10, nicotine: 1.0, tag: '烤烟型 · 硬盒', color: '#10b981', packStyle: 'yinghehua', stockSticks: 0, isFrequent: true },
       { id: 'b_ruanhehua', name: '软荷花', price: 50, sticksPerPack: 20, tar: 10, nicotine: 1.0, tag: '三段式 · 软包', color: '#fb7185', packStyle: 'ruanhehua', stockSticks: 0, isFrequent: true },
       { id: 'b_yanyue', name: '颜悦', price: 20, sticksPerPack: 20, tar: 6, nicotine: 0.6, tag: '细支 · 蓝金国风', color: '#f59e0b', packStyle: 'yanyue', stockSticks: 0, isFrequent: true },
       { id: 'b_zhongnanhai', name: '中南海蓝莓', price: 23, sticksPerPack: 20, tar: 5, nicotine: 0.5, tag: '星空 · 蓝莓爆珠', color: '#a78bfa', packStyle: 'zhongnanhai', stockSticks: 0, isFrequent: true },
+      { id: 'b_daguanyuan', name: '大观园', price: 40, sticksPerPack: 20, tar: 6, nicotine: 0.6, tag: '细支 · 红楼国风', color: '#ef4444', packStyle: 'daguanyuan', stockSticks: 0, isFrequent: true },
+      { id: 'b_heiliqun', name: '黑利群', price: 48, sticksPerPack: 20, tar: 8, nicotine: 0.8, tag: '烤烟型 · 阳光硬盒', color: '#94a3b8', packStyle: 'heiliqun', stockSticks: 0, isFrequent: true },
     ];
+    const LEGACY_SEEDED_BRAND_IDS = ['b_yinchai', 'b_yinghehua', 'b_ruanhehua', 'b_yanyue', 'b_zhongnanhai'];
 
     let state = {
       brands: [],
       records: [],
+      seededBrandIds: [],
       activeTab: 'home',
       inventoryExpanded: false,
       selectedColor: BRAND_COLORS[0],
@@ -860,6 +862,56 @@
           </svg>`;
       }
 
+      if (style === 'daguanyuan') {
+        // 大观园：中国红细支硬盒 + 烫金古典边框 + 亭台园林剪影
+        return `
+          <svg class="${sizeClass} shrink-0 drop-shadow-md" viewBox="0 0 40 54" fill="none">
+            <defs>
+              <linearGradient id="${uid}" x1="0" y1="0" x2="36" y2="54" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#dc2626"/>
+                <stop offset="55%" stop-color="#991b1b"/>
+                <stop offset="100%" stop-color="#7f1d1d"/>
+              </linearGradient>
+            </defs>
+            <rect x="7" y="2" width="26" height="50" rx="3" fill="url(#${uid})" stroke="#fbbf24" stroke-width="1.3"/>
+            <rect x="9.5" y="4.5" width="21" height="45" rx="1.8" stroke="#fde68a" stroke-opacity="0.55" stroke-width="0.7" fill="none"/>
+            <line x1="7" y1="15" x2="33" y2="15" stroke="#fbbf24" stroke-width="0.9"/>
+            <!-- 顶部古典金徽 -->
+            <rect x="16" y="6.5" width="8" height="5" rx="1" stroke="#fde68a" stroke-width="0.9" fill="#b91c1c"/>
+            <!-- 亭台飞檐剪影 -->
+            <path d="M12 29 L20 22 L28 29 Z" fill="#fbbf24" fill-opacity="0.9"/>
+            <path d="M10.5 29.5 Q20 26.5 29.5 29.5" stroke="#fde68a" stroke-width="1.1" fill="none"/>
+            <line x1="15.5" y1="29.5" x2="15.5" y2="36.5" stroke="#fde68a" stroke-width="1.2"/>
+            <line x1="24.5" y1="29.5" x2="24.5" y2="36.5" stroke="#fde68a" stroke-width="1.2"/>
+            <path d="M12 37 H28" stroke="#fbbf24" stroke-width="1.2" stroke-linecap="round"/>
+            <!-- 底部祥云纹 -->
+            <path d="M13 43 Q16.5 40.5 20 43 T27 43" stroke="#fde68a" stroke-opacity="0.8" stroke-width="1" fill="none"/>
+          </svg>`;
+      }
+
+      if (style === 'heiliqun') {
+        // 黑利群：深褐黑渐变商务硬盒 + 金银腰线 + 红底金边标志
+        return `
+          <svg class="${sizeClass} shrink-0 drop-shadow-md" viewBox="0 0 40 54" fill="none">
+            <defs>
+              <linearGradient id="${uid}" x1="0" y1="0" x2="40" y2="54" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#292524"/>
+                <stop offset="50%" stop-color="#1c1917"/>
+                <stop offset="100%" stop-color="#0c0a09"/>
+              </linearGradient>
+            </defs>
+            <rect x="4" y="3" width="32" height="48" rx="3.5" fill="url(#${uid})" stroke="#d6d3d1" stroke-opacity="0.55" stroke-width="1.2"/>
+            <line x1="4" y1="15" x2="36" y2="15" stroke="#eab308" stroke-opacity="0.75" stroke-width="1"/>
+            <line x1="4" y1="17" x2="36" y2="17" stroke="#a8a29e" stroke-opacity="0.45" stroke-width="0.7"/>
+            <!-- 红底金边印章 -->
+            <rect x="14" y="22" width="12" height="12" rx="2" fill="#991b1b" stroke="#f59e0b" stroke-width="1.1"/>
+            <circle cx="20" cy="28" r="3.2" stroke="#fef08a" stroke-width="1" fill="none"/>
+            <!-- 底部金色简约横纹 -->
+            <line x1="11" y1="41" x2="29" y2="41" stroke="#d4af37" stroke-opacity="0.75" stroke-width="1.1" stroke-linecap="round"/>
+            <line x1="15" y1="44.5" x2="25" y2="44.5" stroke="#a8a29e" stroke-opacity="0.6" stroke-width="0.9" stroke-linecap="round"/>
+          </svg>`;
+      }
+
       // 通用自定义烟盒图标
       const c = brand.color || '#f59e0b';
       const initial = escapeHTML((brand.name || '烟').slice(0, 1));
@@ -879,6 +931,8 @@
       if (n.includes('软荷花')) return 'ruanhehua';
       if (n.includes('颜悦')) return 'yanyue';
       if (n.includes('中南海') || n.includes('蓝莓')) return 'zhongnanhai';
+      if (n.includes('大观园')) return 'daguanyuan';
+      if (n.includes('黑利群') || n.includes('利群')) return 'heiliqun';
       return 'custom';
     }
 
@@ -903,6 +957,23 @@
       return hasRecords || hasStock;
     }
 
+    function syncNewDefaultBrands() {
+      const seeded = new Set(Array.isArray(state.seededBrandIds) ? state.seededBrandIds : LEGACY_SEEDED_BRAND_IDS);
+      let changed = false;
+      DEFAULT_BRANDS.forEach(def => {
+        if (!seeded.has(def.id)) {
+          const exists = state.brands.some(b => b.id === def.id || b.name === def.name);
+          if (!exists) {
+            state.brands.push(JSON.parse(JSON.stringify(def)));
+          }
+          seeded.add(def.id);
+          changed = true;
+        }
+      });
+      state.seededBrandIds = Array.from(seeded);
+      if (changed) saveState();
+    }
+
     function loadState() {
       try {
         const currentRaw = localStorage.getItem(STORAGE_KEY);
@@ -912,6 +983,8 @@
         if (currentParsed && hasUserActivity(currentParsed) && Array.isArray(currentParsed.brands) && currentParsed.brands.length > 0) {
           state.brands = currentParsed.brands.map(enrichBrand);
           state.records = Array.isArray(currentParsed.records) ? currentParsed.records : [];
+          state.seededBrandIds = Array.isArray(currentParsed.seededBrandIds) ? currentParsed.seededBrandIds : [...LEGACY_SEEDED_BRAND_IDS];
+          syncNewDefaultBrands();
           return;
         }
 
@@ -924,6 +997,8 @@
           if (hasUserActivity(parsed) && Array.isArray(parsed.brands) && parsed.brands.length > 0) {
             state.brands = parsed.brands.map(enrichBrand);
             state.records = Array.isArray(parsed.records) ? parsed.records : [];
+            state.seededBrandIds = [...LEGACY_SEEDED_BRAND_IDS];
+            syncNewDefaultBrands();
             saveState();
             setTimeout(() => showToast('已自动从本地历史记录恢复你的数据', 'success'), 300);
             return;
@@ -934,6 +1009,8 @@
         if (currentParsed && Array.isArray(currentParsed.brands) && currentParsed.brands.length > 0) {
           state.brands = currentParsed.brands.map(enrichBrand);
           state.records = Array.isArray(currentParsed.records) ? currentParsed.records : [];
+          state.seededBrandIds = Array.isArray(currentParsed.seededBrandIds) ? currentParsed.seededBrandIds : [...LEGACY_SEEDED_BRAND_IDS];
+          syncNewDefaultBrands();
           return;
         }
       } catch (e) {
@@ -941,12 +1018,17 @@
       }
       state.brands = JSON.parse(JSON.stringify(DEFAULT_BRANDS));
       state.records = [];
+      state.seededBrandIds = DEFAULT_BRANDS.map(b => b.id);
       saveState();
     }
 
     function saveState() {
       try {
-        const payload = JSON.stringify({ brands: state.brands, records: state.records });
+        const payload = JSON.stringify({
+          brands: state.brands,
+          records: state.records,
+          seededBrandIds: state.seededBrandIds,
+        });
         localStorage.setItem(STORAGE_KEY, payload);
         updateStorageBadge(true);
       } catch (e) {
@@ -1219,27 +1301,28 @@
       document.getElementById('homeInventorySummary').textContent = `${totalSticks} 根`;
 
       const listEl = document.getElementById('homeInventoryList');
-      if (state.brands.length === 0) {
-        listEl.innerHTML = `<div class="col-span-full py-4 text-center text-xs text-slate-400">暂无烟种，请前往「烟种与价格」添加</div>`;
+      const stockedBrands = state.brands.filter(b => (b.stockSticks || 0) > 0);
+      if (stockedBrands.length === 0) {
+        listEl.innerHTML = `<div class="col-span-full py-3 text-center text-xs text-slate-400">当前暂无在库烟种，点击下方「进货」补充</div>`;
         return;
       }
 
-      listEl.innerHTML = state.brands.map(b => {
+      listEl.innerHTML = stockedBrands.map(b => {
         const spp = b.sticksPerPack > 0 ? b.sticksPerPack : 20;
         const sticks = b.stockSticks || 0;
         const rem = sticks % spp;
-        const pct = sticks === 0 ? 0 : (rem === 0 ? 100 : Math.round((rem / spp) * 100));
+        const pct = rem === 0 ? 100 : Math.round((rem / spp) * 100);
         return `
-          <div class="rounded-xl bg-slate-900/75 border border-slate-800/80 p-2.5 flex items-center gap-3">
-            ${renderPackIcon(b, 'w-8 h-11')}
-            <div class="flex-1 min-w-0 space-y-1.5">
-              <div class="flex items-center justify-between gap-2">
-                <span class="text-xs font-semibold text-white truncate">${escapeHTML(b.name)}</span>
-                <span class="text-xs font-semibold ${sticks > 0 ? 'text-emerald-400' : 'text-slate-500'} shrink-0">${formatSticksToPacks(sticks, spp)}</span>
+          <div class="rounded-xl bg-slate-900/80 border border-slate-800/90 p-2.5 flex flex-col justify-between gap-2">
+            <div class="flex items-center gap-2 min-w-0">
+              ${renderPackIcon(b, 'w-7 h-10')}
+              <div class="flex-1 min-w-0">
+                <div class="text-xs font-semibold text-white truncate">${escapeHTML(b.name)}</div>
+                <div class="text-xs font-bold text-emerald-400 tabular-nums mt-0.5 truncate">${formatSticksToPacks(sticks, spp)}</div>
               </div>
-              <div class="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden">
-                <div class="h-full rounded-full transition-all duration-500" style="width: ${pct}%; background-color: ${b.color}"></div>
-              </div>
+            </div>
+            <div class="w-full h-1 rounded-full bg-slate-800 overflow-hidden">
+              <div class="h-full rounded-full transition-all duration-500" style="width: ${pct}%; background-color: ${b.color}"></div>
             </div>
           </div>
         `;
@@ -2056,6 +2139,7 @@
         openConfirm('清空本地数据', '将清除所有进出货流水并重置烟种库存为 0，无法恢复。确定继续吗？', () => {
           state.brands = JSON.parse(JSON.stringify(DEFAULT_BRANDS));
           state.records = [];
+          state.seededBrandIds = DEFAULT_BRANDS.map(b => b.id);
           saveState();
           renderAll();
           showToast('已清空所有本地数据', 'info');
@@ -2072,8 +2156,9 @@
             if (!Array.isArray(parsed.brands) || !Array.isArray(parsed.records)) {
               return showToast('JSON 格式不正确', 'error');
             }
-            state.brands = parsed.brands;
+            state.brands = parsed.brands.map(enrichBrand);
             state.records = parsed.records;
+            state.seededBrandIds = Array.isArray(parsed.seededBrandIds) ? parsed.seededBrandIds : DEFAULT_BRANDS.map(b => b.id);
             saveState();
             renderAll();
             showToast('成功导入本地备份数据', 'success');
