@@ -2,7 +2,7 @@
 <html lang="zh-CN" class="dark">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>烟迹 · 抽烟与买烟库存管理</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -26,11 +26,34 @@
   </script>
   <style>
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html {
+      color-scheme: dark;
+      background-color: #0b0f17;
+      overscroll-behavior-y: none;
+    }
     body {
       background-color: #0b0f17;
       color: #f1f5f9;
       font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
       overflow-x: hidden;
+      min-height: 100dvh;
+      overscroll-behavior-y: none;
+    }
+    header {
+      padding-top: env(safe-area-inset-top, 0px);
+    }
+    /* Prevent layout shift before Lucide replaces <i> with <svg> */
+    i[data-lucide] {
+      display: inline-block;
+      width: 1rem;
+      height: 1rem;
+      flex-shrink: 0;
+    }
+    .custom-dropdown-menu {
+      background: rgba(15, 23, 42, 0.96);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
     }
 
     ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -149,7 +172,7 @@
   <link rel="manifest" href="./manifest.json" />
   <link rel="apple-touch-icon" href="./icon-192.png" />
 </head>
-<body class="min-h-screen flex flex-col antialiased selection:bg-amber-500/30 selection:text-amber-200">
+<body class="min-h-[100dvh] flex flex-col antialiased selection:bg-amber-500/30 selection:text-amber-200">
 
   <!-- Clean Sticky Header -->
   <header class="sticky top-0 z-30 glass-panel border-b border-slate-800/80">
@@ -193,7 +216,7 @@
   <main class="flex-1 max-w-5xl w-full mx-auto px-4 py-5 flex flex-col">
 
     <!-- TAB 1: 简洁首页 -->
-    <section id="tab-home" class="tab-panel flex-1 flex flex-col justify-between gap-5">
+    <section id="tab-home" class="tab-panel flex flex-col gap-4">
       <div class="space-y-4">
         <!-- 动画展示区 -->
         <div class="relative overflow-hidden glass-panel rounded-3xl p-6 sm:p-8 border border-slate-800/80 flex flex-col items-center justify-center text-center min-h-[205px]">
@@ -247,10 +270,10 @@
       </div>
 
       <!-- 下半部分: 左右 进货 和 出货 -->
-      <div class="grid grid-cols-2 gap-3.5 sm:gap-5 pt-2 pb-2">
-        <button id="btnHomeIn" class="btn-tap group relative overflow-hidden rounded-3xl p-5 sm:p-6 bg-gradient-to-br from-amber-500/20 via-amber-500/10 to-slate-900 border border-amber-500/35 hover:border-amber-400 text-left flex flex-col justify-between min-h-[156px] shadow-lg shadow-amber-500/5">
-          <div class="flex items-center justify-between w-full">
-            <svg class="w-14 h-14 overflow-visible" viewBox="0 0 64 64" fill="none">
+      <div class="grid grid-cols-2 gap-3.5 sm:gap-5 pt-1 pb-2">
+        <button id="btnHomeIn" class="btn-tap group relative overflow-hidden rounded-3xl px-4 py-6 sm:p-6 bg-gradient-to-br from-amber-500/20 via-amber-500/10 to-slate-900 border border-amber-500/35 hover:border-amber-400 text-center flex flex-col items-center justify-center gap-3 min-h-[164px] shadow-lg shadow-amber-500/5">
+          <div class="flex items-center justify-center w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20">
+            <svg class="w-12 h-12 overflow-visible" viewBox="0 0 64 64" fill="none">
               <circle class="sparkle-1" cx="14" cy="14" r="2.2" fill="#fbbf24" />
               <circle class="sparkle-2" cx="52" cy="16" r="1.8" fill="#fde68a" />
               <rect x="12" y="38" width="40" height="18" rx="4" fill="#1e293b" stroke="#f59e0b" stroke-width="2" />
@@ -263,15 +286,15 @@
               </g>
             </svg>
           </div>
-          <div class="mt-3">
+          <div>
             <div class="text-lg sm:text-xl font-bold text-white">进货</div>
             <p class="text-xs text-slate-400 mt-0.5">点一下常抽烟即 +1 包</p>
           </div>
         </button>
 
-        <button id="btnHomeOut" class="btn-tap group relative overflow-hidden rounded-3xl p-5 sm:p-6 bg-gradient-to-br from-rose-500/20 via-orange-500/10 to-slate-900 border border-rose-500/35 hover:border-rose-400 text-left flex flex-col justify-between min-h-[156px] shadow-lg shadow-rose-500/5">
-          <div class="flex items-center justify-between w-full">
-            <svg class="w-14 h-14 overflow-visible" viewBox="0 0 64 64" fill="none">
+        <button id="btnHomeOut" class="btn-tap group relative overflow-hidden rounded-3xl px-4 py-6 sm:p-6 bg-gradient-to-br from-rose-500/20 via-orange-500/10 to-slate-900 border border-rose-500/35 hover:border-rose-400 text-center flex flex-col items-center justify-center gap-3 min-h-[164px] shadow-lg shadow-rose-500/5">
+          <div class="flex items-center justify-center w-16 h-16 rounded-2xl bg-rose-500/10 border border-rose-500/20">
+            <svg class="w-12 h-12 overflow-visible" viewBox="0 0 64 64" fill="none">
               <path class="smoke-1" d="M48 34 C44 25, 53 19, 47 10" stroke="#fda4af" stroke-opacity="0.65" stroke-width="2" stroke-linecap="round" />
               <path class="smoke-2" d="M52 34 C57 24, 46 16, 53 7" stroke="#fdba74" stroke-opacity="0.5" stroke-width="1.8" stroke-linecap="round" />
               <g transform="rotate(-14 32 42)">
@@ -281,7 +304,7 @@
               </g>
             </svg>
           </div>
-          <div class="mt-3">
+          <div>
             <div class="text-lg sm:text-xl font-bold text-white">出货</div>
             <p class="text-xs text-slate-400 mt-0.5">仅展示有库存的烟种</p>
           </div>
@@ -291,104 +314,109 @@
 
     <!-- TAB 2: 统计分析 (含尼古丁与焦油摄入统计) -->
     <section id="tab-stats" class="tab-panel hidden space-y-5">
-      <!-- Row 1: 库存与花费 -->
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div class="glass-panel rounded-2xl p-4 card-enter">
-          <div class="flex items-center justify-between text-slate-400 text-xs mb-1.5">
-            <span>当前总库存</span>
+      <!-- 合并后的核心统计卡片：库存与进货 + 今日/本月累计对比 -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <!-- 卡片 1: 库存与本月进货 -->
+        <div class="glass-panel rounded-2xl p-4 card-enter flex flex-col justify-between gap-3">
+          <div class="flex items-center justify-between text-slate-400 text-xs">
+            <span class="font-medium text-slate-300">库存与本月进货</span>
             <i data-lucide="boxes" class="w-4 h-4 text-emerald-400"></i>
           </div>
-          <div class="flex items-baseline gap-1.5">
-            <span id="kpiStockSticks" class="text-2xl sm:text-3xl font-bold text-white tabular-nums">0</span>
-            <span class="text-xs text-slate-400">根</span>
+          <div class="grid grid-cols-2 gap-3 divide-x divide-slate-800/80">
+            <div>
+              <div class="text-[11px] text-slate-400 mb-0.5">当前总库存</div>
+              <div class="flex items-baseline gap-1">
+                <span id="kpiStockSticks" class="text-2xl font-bold text-white tabular-nums">0</span>
+                <span class="text-xs text-slate-400">根</span>
+              </div>
+              <p id="kpiStockPacks" class="text-[11px] text-emerald-400/90 mt-1 leading-snug">约 0 包 · 估值 ¥0.00</p>
+            </div>
+            <div class="pl-3">
+              <div class="text-[11px] text-slate-400 mb-0.5">本月进货</div>
+              <div class="flex items-baseline gap-1">
+                <span id="kpiMonthSpent" class="text-2xl font-bold text-amber-300 tabular-nums">¥0</span>
+              </div>
+              <p id="kpiMonthPacks" class="text-[11px] text-amber-400/90 mt-1 leading-snug">共买入 0 包 (0 根)</p>
+            </div>
           </div>
-          <p id="kpiStockPacks" class="text-xs text-emerald-400/90 mt-1">约 0 包 · 估值 ¥0.00</p>
         </div>
 
-        <div class="glass-panel rounded-2xl p-4 card-enter" style="animation-delay: 0.04s">
-          <div class="flex items-center justify-between text-slate-400 text-xs mb-1.5">
-            <span>今日出货 (抽烟)</span>
+        <!-- 卡片 2: 抽烟出货 (今日 / 本月) -->
+        <div class="glass-panel rounded-2xl p-4 card-enter flex flex-col justify-between gap-3" style="animation-delay: 0.04s">
+          <div class="flex items-center justify-between text-slate-400 text-xs">
+            <span class="font-medium text-slate-300">抽烟出货</span>
             <i data-lucide="flame" class="w-4 h-4 text-rose-400"></i>
           </div>
-          <div class="flex items-baseline gap-1.5">
-            <span id="kpiTodaySticks" class="text-2xl sm:text-3xl font-bold text-white tabular-nums">0</span>
-            <span class="text-xs text-slate-400">根</span>
+          <div class="grid grid-cols-2 gap-3 divide-x divide-slate-800/80">
+            <div>
+              <div class="text-[11px] text-slate-400 mb-0.5">今日累计</div>
+              <div class="flex items-baseline gap-1">
+                <span id="kpiTodaySticks" class="text-2xl font-bold text-rose-300 tabular-nums">0</span>
+                <span class="text-xs text-slate-400">根</span>
+              </div>
+              <p id="kpiTodayCost" class="text-[11px] text-rose-400/90 mt-1 leading-snug">折合花费 ¥0.00</p>
+            </div>
+            <div class="pl-3">
+              <div class="text-[11px] text-slate-400 mb-0.5">本月累计</div>
+              <div class="flex items-baseline gap-1">
+                <span id="kpiMonthOutSticks" class="text-2xl font-bold text-white tabular-nums">0</span>
+                <span class="text-xs text-slate-400">根</span>
+              </div>
+              <p id="kpiDailyAvg" class="text-[11px] text-sky-400/90 mt-1 leading-snug">日均 0.0 根</p>
+            </div>
           </div>
-          <p id="kpiTodayCost" class="text-xs text-rose-400/90 mt-1">折合花费 ¥0.00</p>
         </div>
 
-        <div class="glass-panel rounded-2xl p-4 card-enter" style="animation-delay: 0.08s">
-          <div class="flex items-center justify-between text-slate-400 text-xs mb-1.5">
-            <span>本月进货 (买烟)</span>
-            <i data-lucide="shopping-bag" class="w-4 h-4 text-amber-400"></i>
-          </div>
-          <div class="flex items-baseline gap-1.5">
-            <span id="kpiMonthSpent" class="text-2xl sm:text-3xl font-bold text-white tabular-nums">¥0</span>
-          </div>
-          <p id="kpiMonthPacks" class="text-xs text-amber-400/90 mt-1">共买入 0 包 (0 根)</p>
-        </div>
-
-        <div class="glass-panel rounded-2xl p-4 card-enter" style="animation-delay: 0.12s">
-          <div class="flex items-center justify-between text-slate-400 text-xs mb-1.5">
-            <span>本月累计出货</span>
-            <i data-lucide="activity" class="w-4 h-4 text-sky-400"></i>
-          </div>
-          <div class="flex items-baseline gap-1.5">
-            <span id="kpiMonthOutSticks" class="text-2xl sm:text-3xl font-bold text-white tabular-nums">0</span>
-            <span class="text-xs text-slate-400">根</span>
-          </div>
-          <p id="kpiDailyAvg" class="text-xs text-sky-400/90 mt-1">日均 0.0 根</p>
-        </div>
-      </div>
-
-      <!-- Row 2: 尼古丁与焦油摄入统计 -->
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div class="glass-panel rounded-2xl p-4 border border-purple-500/20">
-          <div class="flex items-center justify-between text-slate-400 text-xs mb-1.5">
-            <span>今日焦油摄入</span>
+        <!-- 卡片 3: 焦油摄入 (今日 / 本月) -->
+        <div class="glass-panel rounded-2xl p-4 card-enter border border-purple-500/20 flex flex-col justify-between gap-3" style="animation-delay: 0.08s">
+          <div class="flex items-center justify-between text-slate-400 text-xs">
+            <span class="font-medium text-slate-300">焦油摄入</span>
             <i data-lucide="droplet" class="w-4 h-4 text-purple-400"></i>
           </div>
-          <div class="flex items-baseline gap-1.5">
-            <span id="kpiTodayTar" class="text-2xl font-bold text-purple-300 tabular-nums">0.0</span>
-            <span class="text-xs text-slate-400">mg</span>
+          <div class="grid grid-cols-2 gap-3 divide-x divide-slate-800/80">
+            <div>
+              <div class="text-[11px] text-slate-400 mb-0.5">今日累计</div>
+              <div class="flex items-baseline gap-1">
+                <span id="kpiTodayTar" class="text-2xl font-bold text-purple-300 tabular-nums">0.0</span>
+                <span class="text-xs text-slate-400">mg</span>
+              </div>
+              <p class="text-[11px] text-slate-500 mt-1">实际抽烟合计</p>
+            </div>
+            <div class="pl-3">
+              <div class="text-[11px] text-slate-400 mb-0.5">本月累计</div>
+              <div class="flex items-baseline gap-1">
+                <span id="kpiMonthTar" class="text-2xl font-bold text-white tabular-nums">0.0</span>
+                <span class="text-xs text-slate-400">mg</span>
+              </div>
+              <p id="kpiAvgTarPerStick" class="text-[11px] text-purple-400/90 mt-1">单支均值 0.0 mg</p>
+            </div>
           </div>
-          <p class="text-[11px] text-slate-500 mt-1">按实际抽烟支数累计</p>
         </div>
 
-        <div class="glass-panel rounded-2xl p-4 border border-cyan-500/20">
-          <div class="flex items-center justify-between text-slate-400 text-xs mb-1.5">
-            <span>今日尼古丁摄入</span>
+        <!-- 卡片 4: 尼古丁摄入 (今日 / 本月) -->
+        <div class="glass-panel rounded-2xl p-4 card-enter border border-cyan-500/20 flex flex-col justify-between gap-3" style="animation-delay: 0.12s">
+          <div class="flex items-center justify-between text-slate-400 text-xs">
+            <span class="font-medium text-slate-300">尼古丁摄入</span>
             <i data-lucide="zap" class="w-4 h-4 text-cyan-400"></i>
           </div>
-          <div class="flex items-baseline gap-1.5">
-            <span id="kpiTodayNicotine" class="text-2xl font-bold text-cyan-300 tabular-nums">0.0</span>
-            <span class="text-xs text-slate-400">mg</span>
+          <div class="grid grid-cols-2 gap-3 divide-x divide-slate-800/80">
+            <div>
+              <div class="text-[11px] text-slate-400 mb-0.5">今日累计</div>
+              <div class="flex items-baseline gap-1">
+                <span id="kpiTodayNicotine" class="text-2xl font-bold text-cyan-300 tabular-nums">0.0</span>
+                <span class="text-xs text-slate-400">mg</span>
+              </div>
+              <p class="text-[11px] text-slate-500 mt-1">烟碱释放合计</p>
+            </div>
+            <div class="pl-3">
+              <div class="text-[11px] text-slate-400 mb-0.5">本月累计</div>
+              <div class="flex items-baseline gap-1">
+                <span id="kpiMonthNicotine" class="text-2xl font-bold text-white tabular-nums">0.0</span>
+                <span class="text-xs text-slate-400">mg</span>
+              </div>
+              <p id="kpiAvgNicPerStick" class="text-[11px] text-cyan-400/90 mt-1">单支均值 0.00 mg</p>
+            </div>
           </div>
-          <p class="text-[11px] text-slate-500 mt-1">烟碱释放量合计</p>
-        </div>
-
-        <div class="glass-panel rounded-2xl p-4 border border-purple-500/20">
-          <div class="flex items-center justify-between text-slate-400 text-xs mb-1.5">
-            <span>本月累计焦油</span>
-            <i data-lucide="gauge" class="w-4 h-4 text-purple-400"></i>
-          </div>
-          <div class="flex items-baseline gap-1.5">
-            <span id="kpiMonthTar" class="text-2xl font-bold text-white tabular-nums">0.0</span>
-            <span class="text-xs text-slate-400">mg</span>
-          </div>
-          <p id="kpiAvgTarPerStick" class="text-[11px] text-purple-400/90 mt-1">单支均值 0.0 mg</p>
-        </div>
-
-        <div class="glass-panel rounded-2xl p-4 border border-cyan-500/20">
-          <div class="flex items-center justify-between text-slate-400 text-xs mb-1.5">
-            <span>本月累计尼古丁</span>
-            <i data-lucide="shield-alert" class="w-4 h-4 text-cyan-400"></i>
-          </div>
-          <div class="flex items-baseline gap-1.5">
-            <span id="kpiMonthNicotine" class="text-2xl font-bold text-white tabular-nums">0.0</span>
-            <span class="text-xs text-slate-400">mg</span>
-          </div>
-          <p id="kpiAvgNicPerStick" class="text-[11px] text-cyan-400/90 mt-1">单支均值 0.00 mg</p>
         </div>
       </div>
 
@@ -447,17 +475,29 @@
 
     <!-- TAB 4: 出入货流水 -->
     <section id="tab-records" class="tab-panel hidden space-y-4">
-      <div class="glass-panel rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3">
+      <div class="glass-panel rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 relative z-20">
         <div class="flex flex-wrap items-center gap-2">
-          <select id="filterType" class="bg-slate-900 border border-slate-700 text-slate-200 text-xs sm:text-sm rounded-xl px-3 py-2 focus:outline-none focus:border-amber-400">
-            <option value="all">全部类型</option>
-            <option value="in">进货 (买烟)</option>
-            <option value="out">出货 (抽烟)</option>
-          </select>
-          <select id="filterBrand" class="bg-slate-900 border border-slate-700 text-slate-200 text-xs sm:text-sm rounded-xl px-3 py-2 focus:outline-none focus:border-amber-400">
-            <option value="all">全部烟种</option>
-          </select>
-          <input id="filterSearch" type="text" placeholder="搜索烟名..." class="bg-slate-900 border border-slate-700 text-slate-200 text-xs sm:text-sm rounded-xl px-3 py-2 w-40 sm:w-52 focus:outline-none focus:border-amber-400" />
+          <!-- 自定义暗色毛玻璃类型筛选下拉 -->
+          <div class="relative" id="dropdownType">
+            <input type="hidden" id="filterType" value="all" />
+            <button type="button" id="filterTypeBtn" class="btn-tap inline-flex items-center justify-between gap-2 min-w-[116px] bg-slate-900/90 hover:bg-slate-800/90 border border-slate-700/80 text-slate-200 text-xs sm:text-sm rounded-xl px-3 py-2 focus:outline-none focus:border-amber-400 transition-colors">
+              <span id="filterTypeLabel" class="truncate">全部类型</span>
+              <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400 transition-transform duration-200 dropdown-chevron"></i>
+            </button>
+            <div id="filterTypeMenu" class="hidden absolute left-0 mt-1.5 min-w-[144px] rounded-xl p-1.5 custom-dropdown-menu z-30 space-y-0.5 modal-animate"></div>
+          </div>
+
+          <!-- 自定义暗色毛玻璃烟种筛选下拉 -->
+          <div class="relative" id="dropdownBrand">
+            <input type="hidden" id="filterBrand" value="all" />
+            <button type="button" id="filterBrandBtn" class="btn-tap inline-flex items-center justify-between gap-2 min-w-[116px] bg-slate-900/90 hover:bg-slate-800/90 border border-slate-700/80 text-slate-200 text-xs sm:text-sm rounded-xl px-3 py-2 focus:outline-none focus:border-amber-400 transition-colors">
+              <span id="filterBrandLabel" class="truncate">全部烟种</span>
+              <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400 transition-transform duration-200 dropdown-chevron"></i>
+            </button>
+            <div id="filterBrandMenu" class="hidden absolute left-0 mt-1.5 min-w-[164px] max-h-64 overflow-y-auto rounded-xl p-1.5 custom-dropdown-menu z-30 space-y-0.5 modal-animate"></div>
+          </div>
+
+          <input id="filterSearch" type="text" placeholder="搜索烟名..." class="bg-slate-900/90 border border-slate-700/80 text-slate-200 placeholder:text-slate-500 text-xs sm:text-sm rounded-xl px-3 py-2 w-40 sm:w-52 focus:outline-none focus:border-amber-400 transition-colors" />
         </div>
         <div id="recordsSummary" class="text-xs text-slate-400">共 0 条记录</div>
       </div>
@@ -1657,16 +1697,111 @@
       showToast(b.isFrequent ? `已将「${b.name}」设为常抽` : `已取消「${b.name}」常抽标记`, 'info');
     }
 
+    const FILTER_TYPE_OPTIONS = [
+      { value: 'all', label: '全部类型' },
+      { value: 'in', label: '进货 (买烟)', dot: '#f59e0b' },
+      { value: 'out', label: '出货 (抽烟)', dot: '#fb7185' },
+    ];
+
+    function closeAllDropdowns() {
+      ['dropdownType', 'dropdownBrand'].forEach(id => {
+        const wrap = document.getElementById(id);
+        if (!wrap) return;
+        const menu = wrap.querySelector('.custom-dropdown-menu');
+        const btn = wrap.querySelector('button');
+        const chev = wrap.querySelector('.dropdown-chevron');
+        if (menu) menu.classList.add('hidden');
+        if (btn) btn.classList.remove('border-amber-400/70', 'bg-slate-800/90');
+        if (chev) chev.style.transform = 'rotate(0deg)';
+      });
+    }
+
+    function toggleDropdown(dropdownId) {
+      const wrap = document.getElementById(dropdownId);
+      if (!wrap) return;
+      const menu = wrap.querySelector('.custom-dropdown-menu');
+      const btn = wrap.querySelector('button');
+      const chev = wrap.querySelector('.dropdown-chevron');
+      const willOpen = menu.classList.contains('hidden');
+      closeAllDropdowns();
+      if (willOpen) {
+        menu.classList.remove('hidden');
+        if (btn) btn.classList.add('border-amber-400/70', 'bg-slate-800/90');
+        if (chev) chev.style.transform = 'rotate(180deg)';
+      }
+    }
+
+    function selectFilterOption(inputId, value) {
+      const input = document.getElementById(inputId);
+      if (input) input.value = value;
+      closeAllDropdowns();
+      renderRecords();
+      lucide.createIcons();
+    }
+
+    function renderFilterDropdowns() {
+      const typeInput = document.getElementById('filterType');
+      const brandInput = document.getElementById('filterBrand');
+      const curType = typeInput ? typeInput.value : 'all';
+      let curBrand = brandInput ? brandInput.value : 'all';
+
+      if (curBrand !== 'all' && !state.brands.some(b => b.id === curBrand)) {
+        curBrand = 'all';
+        if (brandInput) brandInput.value = 'all';
+      }
+
+      const activeType = FILTER_TYPE_OPTIONS.find(o => o.value === curType) || FILTER_TYPE_OPTIONS[0];
+      const typeLabel = document.getElementById('filterTypeLabel');
+      if (typeLabel) typeLabel.textContent = activeType.label;
+
+      const typeMenu = document.getElementById('filterTypeMenu');
+      if (typeMenu) {
+        typeMenu.innerHTML = FILTER_TYPE_OPTIONS.map(opt => {
+          const selected = opt.value === curType;
+          return `
+            <button type="button" onclick="selectFilterOption('filterType', '${opt.value}')"
+              class="w-full px-2.5 py-2 rounded-lg text-left text-xs sm:text-sm flex items-center justify-between gap-2 transition-colors ${selected ? 'bg-amber-500/15 text-amber-300 font-semibold' : 'text-slate-200 hover:bg-slate-800/80'}">
+              <span class="flex items-center gap-2 truncate">
+                ${opt.dot ? `<span class="w-2 h-2 rounded-full shrink-0" style="background-color:${opt.dot}"></span>` : '<span class="w-2 h-2 rounded-full shrink-0 bg-slate-500/60"></span>'}
+                <span class="truncate">${escapeHTML(opt.label)}</span>
+              </span>
+              ${selected ? '<span class="text-amber-400 text-xs shrink-0">✓</span>' : ''}
+            </button>
+          `;
+        }).join('');
+      }
+
+      const brandOptions = [
+        { value: 'all', label: '全部烟种', dot: '#64748b' },
+        ...state.brands.map(b => ({ value: b.id, label: b.name, dot: b.color || '#f59e0b' }))
+      ];
+      const activeBrand = brandOptions.find(o => o.value === curBrand) || brandOptions[0];
+      const brandLabel = document.getElementById('filterBrandLabel');
+      if (brandLabel) brandLabel.textContent = activeBrand.label;
+
+      const brandMenu = document.getElementById('filterBrandMenu');
+      if (brandMenu) {
+        brandMenu.innerHTML = brandOptions.map(opt => {
+          const selected = opt.value === curBrand;
+          return `
+            <button type="button" onclick="selectFilterOption('filterBrand', '${opt.value}')"
+              class="w-full px-2.5 py-2 rounded-lg text-left text-xs sm:text-sm flex items-center justify-between gap-2 transition-colors ${selected ? 'bg-amber-500/15 text-amber-300 font-semibold' : 'text-slate-200 hover:bg-slate-800/80'}">
+              <span class="flex items-center gap-2 truncate">
+                <span class="w-2 h-2 rounded-full shrink-0" style="background-color:${opt.dot}"></span>
+                <span class="truncate">${escapeHTML(opt.label)}</span>
+              </span>
+              ${selected ? '<span class="text-amber-400 text-xs shrink-0">✓</span>' : ''}
+            </button>
+          `;
+        }).join('');
+      }
+    }
+
     function renderRecords() {
+      renderFilterDropdowns();
       const filterType = document.getElementById('filterType').value;
       const filterBrand = document.getElementById('filterBrand').value;
       const search = document.getElementById('filterSearch').value.trim().toLowerCase();
-
-      const brandSel = document.getElementById('filterBrand');
-      const prevVal = brandSel.value;
-      brandSel.innerHTML = `<option value="all">全部烟种</option>` +
-        state.brands.map(b => `<option value="${b.id}">${escapeHTML(b.name)}</option>`).join('');
-      if ([...brandSel.options].some(o => o.value === prevVal)) brandSel.value = prevVal;
 
       const filtered = state.records.filter(r => {
         if (filterType !== 'all' && r.type !== filterType) return false;
@@ -2147,8 +2282,18 @@
         closeConfirm();
       });
 
-      document.getElementById('filterType').addEventListener('change', renderRecords);
-      document.getElementById('filterBrand').addEventListener('change', renderRecords);
+      document.getElementById('filterTypeBtn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleDropdown('dropdownType');
+      });
+      document.getElementById('filterBrandBtn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleDropdown('dropdownBrand');
+      });
+      document.addEventListener('click', closeAllDropdowns);
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeAllDropdowns();
+      });
       document.getElementById('filterSearch').addEventListener('input', renderRecords);
 
       document.getElementById('btnExportJSON').addEventListener('click', exportJSON);
