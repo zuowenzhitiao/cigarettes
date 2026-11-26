@@ -1,0 +1,2097 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>烟迹 · 抽烟与买烟库存管理</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'PingFang SC', 'Microsoft YaHei', 'system-ui', 'sans-serif'],
+          },
+          colors: {
+            slatebg: '#0b0f17',
+            cardbg: '#131a26',
+            cardhover: '#192233',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      background-color: #0b0f17;
+      color: #f1f5f9;
+      font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+      overflow-x: hidden;
+    }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0b0f17; }
+    ::-webkit-scrollbar-thumb { background: #263248; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3b4c6b; }
+
+    /* Animations */
+    @keyframes emberPulse {
+      0%, 100% { box-shadow: 0 0 10px rgba(249, 115, 22, 0.45), 0 0 24px rgba(245, 158, 11, 0.2); }
+      50% { box-shadow: 0 0 20px rgba(249, 115, 22, 0.9), 0 0 42px rgba(245, 158, 11, 0.45); }
+    }
+    .ember-glow { animation: emberPulse 2.4s ease-in-out infinite; }
+
+    @keyframes emberTip {
+      0%, 100% { opacity: 0.78; filter: drop-shadow(0 0 5px #f97316); }
+      50% { opacity: 1; filter: drop-shadow(0 0 14px #fb7185); }
+    }
+    .ember-tip { animation: emberTip 1.8s ease-in-out infinite; }
+
+    @keyframes smokeRise1 {
+      0% { transform: translateY(0) translateX(0) scale(0.8); opacity: 0; }
+      25% { opacity: 0.6; }
+      70% { transform: translateY(-28px) translateX(7px) scale(1.22); opacity: 0.25; }
+      100% { transform: translateY(-48px) translateX(-4px) scale(1.5); opacity: 0; }
+    }
+    @keyframes smokeRise2 {
+      0% { transform: translateY(0) translateX(0) scale(0.75); opacity: 0; }
+      30% { opacity: 0.5; }
+      75% { transform: translateY(-34px) translateX(-8px) scale(1.28); opacity: 0.2; }
+      100% { transform: translateY(-54px) translateX(5px) scale(1.58); opacity: 0; }
+    }
+    .smoke-1 { animation: smokeRise1 3.2s ease-out infinite; }
+    .smoke-2 { animation: smokeRise2 3.9s ease-out infinite 1.0s; }
+    .smoke-3 { animation: smokeRise1 3.6s ease-out infinite 2.0s; }
+
+    @keyframes packDrop {
+      0% { transform: translateY(-10px) scale(0.95); opacity: 0.7; }
+      45% { transform: translateY(2px) scale(1.03); opacity: 1; }
+      70% { transform: translateY(0) scale(1); opacity: 1; }
+      100% { transform: translateY(-10px) scale(0.95); opacity: 0.7; }
+    }
+    .pack-drop { animation: packDrop 2.6s ease-in-out infinite; }
+
+    @keyframes sparkleFloat {
+      0%, 100% { transform: translateY(0) scale(0.8); opacity: 0.3; }
+      50% { transform: translateY(-6px) scale(1.15); opacity: 1; }
+    }
+    .sparkle-1 { animation: sparkleFloat 2.1s ease-in-out infinite; }
+    .sparkle-2 { animation: sparkleFloat 2.4s ease-in-out infinite 0.7s; }
+
+    @keyframes floatUpFade {
+      0% { opacity: 0; transform: translateY(8px) scale(0.85); }
+      20% { opacity: 1; transform: translateY(-6px) scale(1.08); }
+      100% { opacity: 0; transform: translateY(-54px) scale(0.95); }
+    }
+    .float-particle {
+      position: fixed;
+      pointer-events: none;
+      z-index: 9999;
+      font-weight: 700;
+      animation: floatUpFade 0.95s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    @keyframes modalSlideIn {
+      0% { opacity: 0; transform: translateY(18px) scale(0.97); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .modal-animate { animation: modalSlideIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+    @keyframes cardEnter {
+      0% { opacity: 0; transform: translateY(10px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    .card-enter { animation: cardEnter 0.3s cubic-bezier(0.16, 1, 0.3, 1) backwards; }
+
+    /* Smooth Collapsible Accordion */
+    .accordion-content {
+      display: grid;
+      grid-template-rows: 0fr;
+      transition: grid-template-rows 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .accordion-content.open { grid-template-rows: 1fr; }
+    .accordion-inner { overflow: hidden; }
+
+    .glass-panel {
+      background: rgba(19, 26, 38, 0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(148, 163, 184, 0.12);
+    }
+
+    .btn-tap {
+      transition: transform 0.12s ease, background-color 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    }
+    .btn-tap:active { transform: scale(0.96); }
+
+    /* Long press progress bar */
+    .hold-bar {
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      height: 3px;
+      width: 0%;
+      background: linear-gradient(90deg, #f59e0b, #fb7185);
+      transition: width 0s linear;
+    }
+    .holding .hold-bar {
+      width: 100%;
+      transition: width 0.5s linear;
+    }
+  </style>
+  <meta name="theme-color" content="#0b0f17" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="烟迹" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-amber-500/30 selection:text-amber-200">
+
+  <!-- Clean Sticky Header -->
+  <header class="sticky top-0 z-30 glass-panel border-b border-slate-800/80">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="relative w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-600/20 border border-amber-500/30 flex items-center justify-center ember-glow">
+          <i data-lucide="flame" class="w-4 h-4 text-amber-400"></i>
+        </div>
+        <div>
+          <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-2">
+            烟迹 <span class="text-[11px] font-medium px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700/70">本地账本</span>
+          </h1>
+          <p id="headerSubtitle" class="text-xs text-slate-400">今日抽烟 0 根 · 库存 0 根</p>
+        </div>
+      </div>
+
+      <span class="text-xs text-slate-500 hidden sm:inline">所有记录保存在本地</span>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <nav class="max-w-5xl mx-auto px-4 flex items-center gap-1 overflow-x-auto no-scrollbar border-t border-slate-800/50">
+      <button data-tab="home" class="nav-tab active flex items-center gap-1.5 px-3.5 py-2.5 text-xs sm:text-sm font-medium border-b-2 border-amber-400 text-amber-400 whitespace-nowrap transition-colors">
+        <i data-lucide="home" class="w-4 h-4"></i> 首页
+      </button>
+      <button data-tab="stats" class="nav-tab flex items-center gap-1.5 px-3.5 py-2.5 text-xs sm:text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-slate-200 whitespace-nowrap transition-colors">
+        <i data-lucide="bar-chart-3" class="w-4 h-4"></i> 统计分析
+      </button>
+      <button data-tab="catalog" class="nav-tab flex items-center gap-1.5 px-3.5 py-2.5 text-xs sm:text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-slate-200 whitespace-nowrap transition-colors">
+        <i data-lucide="tags" class="w-4 h-4"></i> 烟种与价格
+      </button>
+      <button data-tab="records" class="nav-tab flex items-center gap-1.5 px-3.5 py-2.5 text-xs sm:text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-slate-200 whitespace-nowrap transition-colors">
+        <i data-lucide="history" class="w-4 h-4"></i> 出入货流水
+      </button>
+      <button data-tab="data" class="nav-tab flex items-center gap-1.5 px-3.5 py-2.5 text-xs sm:text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-slate-200 whitespace-nowrap transition-colors">
+        <i data-lucide="database" class="w-4 h-4"></i> 本地数据
+      </button>
+    </nav>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-1 max-w-5xl w-full mx-auto px-4 py-5 flex flex-col">
+
+    <!-- TAB 1: 简洁首页 -->
+    <section id="tab-home" class="tab-panel flex-1 flex flex-col justify-between gap-5">
+      <div class="space-y-4">
+        <!-- 动画展示区 -->
+        <div class="relative overflow-hidden glass-panel rounded-3xl p-6 sm:p-8 border border-slate-800/80 flex flex-col items-center justify-center text-center min-h-[205px]">
+          <div class="absolute -top-16 left-1/2 -translate-x-1/2 w-64 h-64 rounded-full bg-amber-500/10 blur-3xl pointer-events-none"></div>
+
+          <div class="relative mb-3 mt-1 flex flex-col items-center">
+            <div class="relative w-24 h-14 flex items-end justify-center">
+              <svg class="absolute -top-2 right-2 w-12 h-16 overflow-visible pointer-events-none" viewBox="0 0 48 64">
+                <path class="smoke-1" d="M24 56 C18 44, 30 34, 22 20" stroke="rgba(226,232,240,0.45)" stroke-width="2.5" stroke-linecap="round" fill="none" />
+                <path class="smoke-2" d="M28 56 C34 42, 20 30, 28 14" stroke="rgba(251,146,60,0.35)" stroke-width="2" stroke-linecap="round" fill="none" />
+                <path class="smoke-3" d="M20 56 C14 46, 26 36, 18 24" stroke="rgba(148,163,184,0.3)" stroke-width="1.8" stroke-linecap="round" fill="none" />
+              </svg>
+              <div class="flex items-center rounded-full overflow-hidden shadow-lg border border-slate-700/60 bg-slate-900">
+                <div class="w-6 h-3.5 bg-amber-500/90"></div>
+                <div class="w-16 h-3.5 bg-slate-100"></div>
+                <div class="w-2.5 h-3.5 bg-gradient-to-r from-orange-500 to-rose-500 ember-tip"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="relative z-10 space-y-1">
+            <div class="text-xs uppercase tracking-widest text-slate-400">今日抽烟状态</div>
+            <div class="flex items-baseline justify-center gap-2">
+              <span id="homeTodaySticks" class="text-4xl sm:text-5xl font-extrabold text-white tabular-nums tracking-tight">0</span>
+              <span class="text-sm text-slate-400">根</span>
+            </div>
+            <p id="homeSubStatus" class="text-xs text-slate-400 pt-1">点击下方「进货」或「出货」快捷记录</p>
+          </div>
+        </div>
+
+        <!-- 可折叠展开的库存 -->
+        <div class="glass-panel rounded-2xl border border-slate-800/80 overflow-hidden">
+          <button id="toggleInventoryBtn" type="button" class="w-full px-4 py-3.5 flex items-center justify-between text-left hover:bg-slate-800/40 transition-colors">
+            <div class="flex items-center gap-2.5">
+              <i data-lucide="boxes" class="w-4 h-4 text-emerald-400"></i>
+              <span class="text-sm font-semibold text-white">当前库存</span>
+              <span id="homeInventorySummary" class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/25">0 根</span>
+            </div>
+            <div class="flex items-center gap-1.5 text-xs text-slate-400">
+              <span id="toggleInventoryLabel">展开明细</span>
+              <i id="toggleInventoryChevron" data-lucide="chevron-down" class="w-4 h-4 transition-transform duration-300"></i>
+            </div>
+          </button>
+
+          <div id="inventoryAccordion" class="accordion-content">
+            <div class="accordion-inner">
+              <div id="homeInventoryList" class="px-4 pb-4 pt-2 grid grid-cols-1 sm:grid-cols-2 gap-2.5 border-t border-slate-800/60"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 下半部分: 左右 进货 和 出货 -->
+      <div class="grid grid-cols-2 gap-3.5 sm:gap-5 pt-2 pb-2">
+        <button id="btnHomeIn" class="btn-tap group relative overflow-hidden rounded-3xl p-5 sm:p-6 bg-gradient-to-br from-amber-500/20 via-amber-500/10 to-slate-900 border border-amber-500/35 hover:border-amber-400 text-left flex flex-col justify-between min-h-[156px] shadow-lg shadow-amber-500/5">
+          <div class="flex items-center justify-between w-full">
+            <svg class="w-14 h-14 overflow-visible" viewBox="0 0 64 64" fill="none">
+              <circle class="sparkle-1" cx="14" cy="14" r="2.2" fill="#fbbf24" />
+              <circle class="sparkle-2" cx="52" cy="16" r="1.8" fill="#fde68a" />
+              <rect x="12" y="38" width="40" height="18" rx="4" fill="#1e293b" stroke="#f59e0b" stroke-width="2" />
+              <path d="M12 44 H52" stroke="#f59e0b" stroke-opacity="0.35" stroke-width="1.5" />
+              <g class="pack-drop">
+                <rect x="21" y="12" width="22" height="28" rx="3.5" fill="#f59e0b" />
+                <rect x="21" y="12" width="22" height="8" rx="2.5" fill="#fbbf24" />
+                <rect x="26" y="24" width="12" height="8" rx="1.5" fill="#0f172a" fill-opacity="0.28" />
+                <path d="M29 28 H35" stroke="#fffbeb" stroke-width="1.8" stroke-linecap="round" />
+              </g>
+            </svg>
+            <span class="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/25">按包</span>
+          </div>
+          <div class="mt-3">
+            <div class="text-lg sm:text-xl font-bold text-white">进货</div>
+            <p class="text-xs text-slate-400 mt-0.5">点一下常抽烟即 +1 包</p>
+          </div>
+        </button>
+
+        <button id="btnHomeOut" class="btn-tap group relative overflow-hidden rounded-3xl p-5 sm:p-6 bg-gradient-to-br from-rose-500/20 via-orange-500/10 to-slate-900 border border-rose-500/35 hover:border-rose-400 text-left flex flex-col justify-between min-h-[156px] shadow-lg shadow-rose-500/5">
+          <div class="flex items-center justify-between w-full">
+            <svg class="w-14 h-14 overflow-visible" viewBox="0 0 64 64" fill="none">
+              <path class="smoke-1" d="M48 34 C44 25, 53 19, 47 10" stroke="#fda4af" stroke-opacity="0.65" stroke-width="2" stroke-linecap="round" />
+              <path class="smoke-2" d="M52 34 C57 24, 46 16, 53 7" stroke="#fdba74" stroke-opacity="0.5" stroke-width="1.8" stroke-linecap="round" />
+              <g transform="rotate(-14 32 42)">
+                <rect x="10" y="38" width="12" height="8" rx="2" fill="#f59e0b" />
+                <rect x="22" y="38" width="24" height="8" fill="#f8fafc" />
+                <rect class="ember-tip" x="46" y="38" width="6" height="8" rx="1.5" fill="#fb7185" />
+              </g>
+            </svg>
+            <span class="text-xs font-medium px-2.5 py-1 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/25">按根</span>
+          </div>
+          <div class="mt-3">
+            <div class="text-lg sm:text-xl font-bold text-white">出货</div>
+            <p class="text-xs text-slate-400 mt-0.5">仅展示有库存的烟种</p>
+          </div>
+        </button>
+      </div>
+    </section>
+
+    <!-- TAB 2: 统计分析 (含尼古丁与焦油摄入统计) -->
+    <section id="tab-stats" class="tab-panel hidden space-y-5">
+      <!-- Row 1: 库存与花费 -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div class="glass-panel rounded-2xl p-4 card-enter">
+          <div class="flex items-center justify-between text-slate-400 text-xs mb-1.5">
+            <span>当前总库存</span>
+            <i data-lucide="boxes" class="w-4 h-4 text-emerald-400"></i>
+          </div>
+          <div class="flex items-baseline gap-1.5">
+            <span id="kpiStockSticks" class="text-2xl sm:text-3xl font-bold text-white tabular-nums">0</span>
+            <span class="text-xs text-slate-400">根</span>
+          </div>
+          <p id="kpiStockPacks" class="text-xs text-emerald-400/90 mt-1">约 0 包 · 估值 ¥0.00</p>
+        </div>
+
+        <div class="glass-panel rounded-2xl p-4 card-enter" style="animation-delay: 0.04s">
+          <div class="flex items-center justify-between text-slate-400 text-xs mb-1.5">
+            <span>今日出货 (抽烟)</span>
+            <i data-lucide="flame" class="w-4 h-4 text-rose-400"></i>
+          </div>
+          <div class="flex items-baseline gap-1.5">
+            <span id="kpiTodaySticks" class="text-2xl sm:text-3xl font-bold text-white tabular-nums">0</span>
+            <span class="text-xs text-slate-400">根</span>
+          </div>
+          <p id="kpiTodayCost" class="text-xs text-rose-400/90 mt-1">折合花费 ¥0.00</p>
+        </div>
+
+        <div class="glass-panel rounded-2xl p-4 card-enter" style="animation-delay: 0.08s">
+          <div class="flex items-center justify-between text-slate-400 text-xs mb-1.5">
+            <span>本月进货 (买烟)</span>
+            <i data-lucide="shopping-bag" class="w-4 h-4 text-amber-400"></i>
+          </div>
+          <div class="flex items-baseline gap-1.5">
+            <span id="kpiMonthSpent" class="text-2xl sm:text-3xl font-bold text-white tabular-nums">¥0</span>
+          </div>
+          <p id="kpiMonthPacks" class="text-xs text-amber-400/90 mt-1">共买入 0 包 (0 根)</p>
+        </div>
+
+        <div class="glass-panel rounded-2xl p-4 card-enter" style="animation-delay: 0.12s">
+          <div class="flex items-center justify-between text-slate-400 text-xs mb-1.5">
+            <span>本月累计出货</span>
+            <i data-lucide="activity" class="w-4 h-4 text-sky-400"></i>
+          </div>
+          <div class="flex items-baseline gap-1.5">
+            <span id="kpiMonthOutSticks" class="text-2xl sm:text-3xl font-bold text-white tabular-nums">0</span>
+            <span class="text-xs text-slate-400">根</span>
+          </div>
+          <p id="kpiDailyAvg" class="text-xs text-sky-400/90 mt-1">日均 0.0 根</p>
+        </div>
+      </div>
+
+      <!-- Row 2: 尼古丁与焦油摄入统计 -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div class="glass-panel rounded-2xl p-4 border border-purple-500/20">
+          <div class="flex items-center justify-between text-slate-400 text-xs mb-1.5">
+            <span>今日焦油摄入</span>
+            <i data-lucide="droplet" class="w-4 h-4 text-purple-400"></i>
+          </div>
+          <div class="flex items-baseline gap-1.5">
+            <span id="kpiTodayTar" class="text-2xl font-bold text-purple-300 tabular-nums">0.0</span>
+            <span class="text-xs text-slate-400">mg</span>
+          </div>
+          <p class="text-[11px] text-slate-500 mt-1">按实际抽烟支数累计</p>
+        </div>
+
+        <div class="glass-panel rounded-2xl p-4 border border-cyan-500/20">
+          <div class="flex items-center justify-between text-slate-400 text-xs mb-1.5">
+            <span>今日尼古丁摄入</span>
+            <i data-lucide="zap" class="w-4 h-4 text-cyan-400"></i>
+          </div>
+          <div class="flex items-baseline gap-1.5">
+            <span id="kpiTodayNicotine" class="text-2xl font-bold text-cyan-300 tabular-nums">0.0</span>
+            <span class="text-xs text-slate-400">mg</span>
+          </div>
+          <p class="text-[11px] text-slate-500 mt-1">烟碱释放量合计</p>
+        </div>
+
+        <div class="glass-panel rounded-2xl p-4 border border-purple-500/20">
+          <div class="flex items-center justify-between text-slate-400 text-xs mb-1.5">
+            <span>本月累计焦油</span>
+            <i data-lucide="gauge" class="w-4 h-4 text-purple-400"></i>
+          </div>
+          <div class="flex items-baseline gap-1.5">
+            <span id="kpiMonthTar" class="text-2xl font-bold text-white tabular-nums">0.0</span>
+            <span class="text-xs text-slate-400">mg</span>
+          </div>
+          <p id="kpiAvgTarPerStick" class="text-[11px] text-purple-400/90 mt-1">单支均值 0.0 mg</p>
+        </div>
+
+        <div class="glass-panel rounded-2xl p-4 border border-cyan-500/20">
+          <div class="flex items-center justify-between text-slate-400 text-xs mb-1.5">
+            <span>本月累计尼古丁</span>
+            <i data-lucide="shield-alert" class="w-4 h-4 text-cyan-400"></i>
+          </div>
+          <div class="flex items-baseline gap-1.5">
+            <span id="kpiMonthNicotine" class="text-2xl font-bold text-white tabular-nums">0.0</span>
+            <span class="text-xs text-slate-400">mg</span>
+          </div>
+          <p id="kpiAvgNicPerStick" class="text-[11px] text-cyan-400/90 mt-1">单支均值 0.00 mg</p>
+        </div>
+      </div>
+
+      <!-- Charts Row 1 -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div class="lg:col-span-2 glass-panel rounded-2xl p-4">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-semibold text-white">近 7 天进出货趋势</h3>
+            <span class="text-xs text-slate-400">出货(根) vs 进货(包)</span>
+          </div>
+          <div class="relative h-60">
+            <canvas id="trendChart"></canvas>
+          </div>
+        </div>
+        <div class="glass-panel rounded-2xl p-4">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-semibold text-white">各烟种出货占比</h3>
+            <span class="text-xs text-slate-400">按根数统计</span>
+          </div>
+          <div class="relative h-60 flex items-center justify-center">
+            <canvas id="brandChart"></canvas>
+            <div id="brandChartEmpty" class="hidden absolute inset-0 flex flex-col items-center justify-center text-center p-4">
+              <i data-lucide="pie-chart" class="w-8 h-8 text-slate-600 mb-2"></i>
+              <p class="text-xs text-slate-400">暂无出货记录<br>在首页记录出货后将自动生成</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts Row 2: 焦油 & 尼古丁 7日趋势 -->
+      <div class="glass-panel rounded-2xl p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-sm font-semibold text-white">近 7 天焦油 & 尼古丁摄入趋势</h3>
+          <span class="text-xs text-slate-400">焦油 (mg) · 尼古丁 (mg)</span>
+        </div>
+        <div class="relative h-60">
+          <canvas id="healthChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: 烟种与价格管理 -->
+    <section id="tab-catalog" class="tab-panel hidden space-y-5">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 class="text-lg font-bold text-white">烟种与理化参数目录</h2>
+          <p class="text-xs text-slate-400">管理烟种价格、焦油量与尼古丁(烟碱)含量，标记为「常抽」将优先展示</p>
+        </div>
+        <button id="btnAddBrand" class="btn-tap inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold text-sm">
+          <i data-lucide="plus" class="w-4 h-4"></i> 新增烟种
+        </button>
+      </div>
+
+      <div id="catalogList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+    </section>
+
+    <!-- TAB 4: 出入货流水 -->
+    <section id="tab-records" class="tab-panel hidden space-y-4">
+      <div class="glass-panel rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center gap-2">
+          <select id="filterType" class="bg-slate-900 border border-slate-700 text-slate-200 text-xs sm:text-sm rounded-xl px-3 py-2 focus:outline-none focus:border-amber-400">
+            <option value="all">全部类型</option>
+            <option value="in">进货 (买烟·按包)</option>
+            <option value="out">出货 (抽烟·按根)</option>
+          </select>
+          <select id="filterBrand" class="bg-slate-900 border border-slate-700 text-slate-200 text-xs sm:text-sm rounded-xl px-3 py-2 focus:outline-none focus:border-amber-400">
+            <option value="all">全部烟种</option>
+          </select>
+          <input id="filterSearch" type="text" placeholder="搜索烟名..." class="bg-slate-900 border border-slate-700 text-slate-200 text-xs sm:text-sm rounded-xl px-3 py-2 w-40 sm:w-52 focus:outline-none focus:border-amber-400" />
+        </div>
+        <div id="recordsSummary" class="text-xs text-slate-400">共 0 条记录</div>
+      </div>
+
+      <div class="glass-panel rounded-2xl overflow-hidden">
+        <div id="recordsList" class="divide-y divide-slate-800/70"></div>
+      </div>
+    </section>
+
+    <!-- TAB 5: 本地数据管理 -->
+    <section id="tab-data" class="tab-panel hidden space-y-5">
+      <div class="glass-panel rounded-2xl p-5 space-y-4">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+              <i data-lucide="hard-drive" class="w-5 h-5 text-emerald-400"></i> 本地存储状态
+            </h2>
+            <p class="text-xs text-slate-400 mt-1">所有烟种、焦油尼古丁参数、库存与出入货流水均实时保存在浏览器本地存储 (localStorage) 中。</p>
+          </div>
+          <span id="storageBadge" class="px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 whitespace-nowrap">本地已连接</span>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+          <div class="bg-slate-900/70 rounded-xl p-3 border border-slate-800">
+            <div class="text-xs text-slate-400">烟种数量</div>
+            <div id="statBrandCount" class="text-lg font-bold text-white mt-0.5">0</div>
+          </div>
+          <div class="bg-slate-900/70 rounded-xl p-3 border border-slate-800">
+            <div class="text-xs text-slate-400">流水总数</div>
+            <div id="statRecordCount" class="text-lg font-bold text-white mt-0.5">0</div>
+          </div>
+          <div class="bg-slate-900/70 rounded-xl p-3 border border-slate-800">
+            <div class="text-xs text-slate-400">累计买烟支出</div>
+            <div id="statTotalSpent" class="text-lg font-bold text-amber-400 mt-0.5">¥0.00</div>
+          </div>
+          <div class="bg-slate-900/70 rounded-xl p-3 border border-slate-800">
+            <div class="text-xs text-slate-400">本地占用体积</div>
+            <div id="statStorageSize" class="text-lg font-bold text-sky-400 mt-0.5">0 KB</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="glass-panel rounded-2xl p-5 space-y-3">
+          <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+            <i data-lucide="download" class="w-4 h-4 text-sky-400"></i> 导出与备份
+          </h3>
+          <p class="text-xs text-slate-400">将本地账本导出为 JSON 备份文件，或导出包含焦油/尼古丁数据的 CSV 表格。</p>
+          <div class="flex flex-wrap gap-2.5 pt-1">
+            <button id="btnExportJSON" class="btn-tap inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs sm:text-sm border border-slate-700">
+              <i data-lucide="file-json" class="w-4 h-4 text-sky-400"></i> 导出 JSON 备份
+            </button>
+            <button id="btnExportCSV" class="btn-tap inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs sm:text-sm border border-slate-700">
+              <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-400"></i> 导出 CSV 流水
+            </button>
+          </div>
+        </div>
+
+        <div class="glass-panel rounded-2xl p-5 space-y-3">
+          <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+            <i data-lucide="upload" class="w-4 h-4 text-amber-400"></i> 恢复与重置
+          </h3>
+          <p class="text-xs text-slate-400">从 JSON 备份恢复数据，载入7天示例体验数据，或清空本地账本。</p>
+          <div class="flex flex-wrap gap-2.5 pt-1">
+            <label class="btn-tap cursor-pointer inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs sm:text-sm border border-slate-700">
+              <i data-lucide="folder-up" class="w-4 h-4 text-amber-400"></i> 导入 JSON
+              <input id="inputImportJSON" type="file" accept=".json,application/json" class="hidden" />
+            </label>
+            <button id="btnLoadDemo" class="btn-tap inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 text-xs sm:text-sm border border-indigo-500/30">
+              <i data-lucide="sparkles" class="w-4 h-4"></i> 载入示例数据
+            </button>
+            <button id="btnResetAll" class="btn-tap inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 text-xs sm:text-sm border border-rose-500/30">
+              <i data-lucide="trash-2" class="w-4 h-4"></i> 清空本地数据
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- MODAL 1: 极简进出货面板 (出货仅展示有库存烟种，点一下完成，长按改属性) -->
+  <div id="actionModal" class="fixed inset-0 z-40 hidden items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+    <div class="glass-panel modal-animate w-full max-w-md rounded-3xl p-5 sm:p-6 shadow-2xl border border-slate-700/80 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <h3 id="actionModalTitle" class="text-lg font-bold text-white">快捷进货</h3>
+          <span id="actionModeBadge" class="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300">点一下 +1 包</span>
+        </div>
+        <button id="closeActionModal" class="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- 动画插画头部 -->
+      <div id="actionAnimBanner" class="rounded-2xl bg-slate-900/80 border border-slate-800/90 py-3 px-4 flex items-center justify-center gap-4">
+        <div id="animVisualIn" class="flex items-center gap-3.5">
+          <svg class="w-12 h-12 overflow-visible shrink-0" viewBox="0 0 64 64" fill="none">
+            <circle class="sparkle-1" cx="14" cy="14" r="2.2" fill="#fbbf24" />
+            <circle class="sparkle-2" cx="52" cy="16" r="1.8" fill="#fde68a" />
+            <rect x="12" y="38" width="40" height="18" rx="4" fill="#1e293b" stroke="#f59e0b" stroke-width="2" />
+            <g class="pack-drop">
+              <rect x="21" y="12" width="22" height="28" rx="3.5" fill="#f59e0b" />
+              <rect x="21" y="12" width="22" height="8" rx="2.5" fill="#fbbf24" />
+              <rect x="26" y="24" width="12" height="8" rx="1.5" fill="#0f172a" fill-opacity="0.28" />
+            </g>
+          </svg>
+          <div class="text-left">
+            <div class="text-sm font-semibold text-amber-300">点击常抽烟种，直接进货 1 包</div>
+            <div class="text-xs text-slate-400 mt-0.5">长按任意烟盒 0.5 秒修改价格与焦油</div>
+          </div>
+        </div>
+
+        <div id="animVisualOut" class="hidden flex items-center gap-3.5">
+          <svg class="w-12 h-12 overflow-visible shrink-0" viewBox="0 0 64 64" fill="none">
+            <path class="smoke-1" d="M48 34 C44 25, 53 19, 47 10" stroke="#fda4af" stroke-opacity="0.7" stroke-width="2" stroke-linecap="round" />
+            <path class="smoke-2" d="M52 34 C57 24, 46 16, 53 7" stroke="#fdba74" stroke-opacity="0.55" stroke-width="1.8" stroke-linecap="round" />
+            <g transform="rotate(-14 32 42)">
+              <rect x="10" y="38" width="12" height="8" rx="2" fill="#f59e0b" />
+              <rect x="22" y="38" width="24" height="8" fill="#f8fafc" />
+              <rect class="ember-tip" x="46" y="38" width="6" height="8" rx="1.5" fill="#fb7185" />
+            </g>
+          </svg>
+          <div class="text-left">
+            <div class="text-sm font-semibold text-rose-300">点击在库烟种，直接出货 1 根</div>
+            <div class="text-xs text-slate-400 mt-0.5">自动累计焦油/尼古丁并隐藏无货烟种</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mode Switcher -->
+      <div class="grid grid-cols-2 p-1 rounded-2xl bg-slate-900 border border-slate-800">
+        <button id="modeBtnIn" class="py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-1.5 bg-amber-500 text-slate-950 shadow">
+          <i data-lucide="package-plus" class="w-4 h-4"></i> 进货 (+1包)
+        </button>
+        <button id="modeBtnOut" class="py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-1.5 text-slate-400 hover:text-white">
+          <i data-lucide="flame" class="w-4 h-4"></i> 出货 (-1根)
+        </button>
+      </div>
+
+      <!-- 烟种一键卡片区 -->
+      <div class="space-y-2.5">
+        <div class="flex items-center justify-between">
+          <span id="pickerSectionLabel" class="text-xs font-medium text-amber-400 flex items-center gap-1">
+            <i data-lucide="star" class="w-3.5 h-3.5 fill-amber-400"></i> 常抽的烟
+          </span>
+          <button id="toggleShowAllBrandsBtn" type="button" class="text-xs text-slate-400 hover:text-white transition-colors">查看全部</button>
+        </div>
+        <div id="tapActionGrid" class="grid grid-cols-2 gap-2.5"></div>
+      </div>
+
+      <p class="text-[11px] text-center text-slate-400 pt-0.5">
+        轻点卡片直接完成 · <span class="text-amber-300">长按卡片 0.5 秒</span> 修改价格、焦油与尼古丁
+      </p>
+    </div>
+  </div>
+
+  <!-- MODAL 2: 新增/编辑烟种 (含焦油 & 尼古丁) -->
+  <div id="brandModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+    <div class="glass-panel modal-animate w-full max-w-md rounded-3xl p-5 sm:p-6 shadow-2xl border border-slate-700/80 space-y-4 max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between">
+        <h3 id="brandModalTitle" class="text-lg font-bold text-white">修改烟种属性</h3>
+        <button id="closeBrandModal" class="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <input id="editBrandId" type="hidden" />
+      <div class="space-y-1.5">
+        <label class="text-xs font-medium text-slate-400">烟种名称 *</label>
+        <input id="brandNameInput" type="text" placeholder="例如：银钗 / 硬荷花" class="w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-amber-400" />
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div class="space-y-1.5">
+          <label class="text-xs font-medium text-slate-400">单包价格 (¥) *</label>
+          <input id="brandPriceInput" type="number" min="0" step="0.5" value="25" class="w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-amber-400" />
+        </div>
+        <div class="space-y-1.5">
+          <label class="text-xs font-medium text-slate-400">每包支数 (根) *</label>
+          <input id="brandSticksInput" type="number" min="1" max="100" value="20" class="w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-amber-400" />
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div class="space-y-1.5">
+          <label class="text-xs font-medium text-purple-300">焦油量 (mg/支) *</label>
+          <input id="brandTarInput" type="number" min="0" step="0.5" value="8" class="w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-purple-400" />
+        </div>
+        <div class="space-y-1.5">
+          <label class="text-xs font-medium text-cyan-300">尼古丁/烟碱 (mg/支) *</label>
+          <input id="brandNicotineInput" type="number" min="0" step="0.1" value="0.8" class="w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-cyan-400" />
+        </div>
+      </div>
+
+      <div class="space-y-1.5">
+        <label class="text-xs font-medium text-slate-400">风味/标签 (可选)</label>
+        <input id="brandTagInput" type="text" placeholder="例如：薄荷细支 / 烤烟型" class="w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-amber-400" />
+      </div>
+
+      <label class="flex items-center gap-2.5 cursor-pointer select-none py-1">
+        <input id="brandFrequentInput" type="checkbox" checked class="w-4 h-4 rounded accent-amber-500" />
+        <span class="text-xs sm:text-sm text-slate-200">设为「常抽的烟」（进货界面优先展示）</span>
+      </label>
+
+      <div class="space-y-1.5">
+        <label class="text-xs font-medium text-slate-400">卡片主题色</label>
+        <div id="brandColorPicker" class="flex items-center gap-2.5"></div>
+      </div>
+
+      <button id="saveBrandBtn" class="btn-tap w-full py-3 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm">
+        保存修改
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL 3: 确认弹窗 -->
+  <div id="confirmModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+    <div class="glass-panel modal-animate w-full max-w-sm rounded-3xl p-5 shadow-2xl border border-slate-700/80 space-y-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-2xl bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0">
+          <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h4 id="confirmTitle" class="text-base font-bold text-white">确认操作</h4>
+          <p id="confirmMessage" class="text-xs text-slate-400 mt-0.5">确定执行此操作吗？</p>
+        </div>
+      </div>
+      <div class="flex items-center justify-end gap-2 pt-1">
+        <button id="confirmCancelBtn" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium">取消</button>
+        <button id="confirmOkBtn" class="px-4 py-2 rounded-xl bg-rose-500 hover:bg-rose-400 text-white text-xs font-semibold">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-xs w-full pointer-events-none"></div>
+
+  <script>
+    const STORAGE_KEY = 'smoke_track_app_v3';
+    const BRAND_COLORS = ['#38bdf8', '#10b981', '#fb7185', '#f59e0b', '#a78bfa', '#f97316'];
+
+    // 依据真实外观与理化指标配置的 5 款常抽烟种
+    const DEFAULT_BRANDS = [
+      { id: 'b_yinchai', name: '银钗', price: 22, sticksPerPack: 20, tar: 6, nicotine: 0.6, tag: '细支 · 薄荷', color: '#38bdf8', packStyle: 'yinchai', stockSticks: 0, isFrequent: true },
+      { id: 'b_yinghehua', name: '硬荷花', price: 32, sticksPerPack: 20, tar: 10, nicotine: 1.0, tag: '烤烟型 · 硬盒', color: '#10b981', packStyle: 'yinghehua', stockSticks: 0, isFrequent: true },
+      { id: 'b_ruanhehua', name: '软荷花', price: 50, sticksPerPack: 20, tar: 10, nicotine: 1.0, tag: '三段式 · 软包', color: '#fb7185', packStyle: 'ruanhehua', stockSticks: 0, isFrequent: true },
+      { id: 'b_yanyue', name: '颜悦', price: 20, sticksPerPack: 20, tar: 6, nicotine: 0.6, tag: '细支 · 蓝金国风', color: '#f59e0b', packStyle: 'yanyue', stockSticks: 0, isFrequent: true },
+      { id: 'b_zhongnanhai', name: '中南海蓝莓', price: 23, sticksPerPack: 20, tar: 5, nicotine: 0.5, tag: '星空 · 蓝莓爆珠', color: '#a78bfa', packStyle: 'zhongnanhai', stockSticks: 0, isFrequent: true },
+    ];
+
+    let state = {
+      brands: [],
+      records: [],
+      activeTab: 'home',
+      inventoryExpanded: false,
+      selectedColor: BRAND_COLORS[0],
+      actionMode: 'in',
+      showAllInPicker: false,
+    };
+
+    let trendChartInstance = null;
+    let brandChartInstance = null;
+    let healthChartInstance = null;
+    let confirmCallback = null;
+
+    // =========================================================================
+    // 重绘各烟种外形包装 SVG 图标
+    // =========================================================================
+    function renderPackIcon(brand, sizeClass = 'w-10 h-12') {
+      const style = brand.packStyle || inferPackStyle(brand.name);
+      const uid = 'p_' + Math.random().toString(36).slice(2, 7);
+
+      if (style === 'yinchai') {
+        // 银钗：银绿渐变细长硬盒 + 淡金双线框 + 仕女云纹 + 红色朱印
+        return `
+          <svg class="${sizeClass} shrink-0 drop-shadow-md" viewBox="0 0 40 54" fill="none">
+            <defs>
+              <linearGradient id="${uid}" x1="0" y1="0" x2="40" y2="54" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#e2f3ef"/>
+                <stop offset="55%" stop-color="#b6d8d2"/>
+                <stop offset="100%" stop-color="#8bb8b4"/>
+              </linearGradient>
+            </defs>
+            <rect x="7" y="2" width="26" height="50" rx="3" fill="url(#${uid})" stroke="#d4af37" stroke-width="1.2"/>
+            <line x1="7" y1="14" x2="33" y2="14" stroke="#b89738" stroke-width="0.9"/>
+            <rect x="10" y="17" width="20" height="29" rx="1.5" stroke="#9a8238" stroke-width="0.7" fill="rgba(255,255,255,0.22)"/>
+            <!-- 古典仕女意象剪影 -->
+            <circle cx="20" cy="24" r="3.2" fill="#334155"/>
+            <path d="M14.5 41 C15 32, 17 29, 20 29 C23 29, 25 32, 25.5 41 Z" fill="#475569" fill-opacity="0.78"/>
+            <path d="M15 36 Q20 33 25 36" stroke="#d4af37" stroke-width="0.9" fill="none"/>
+            <!-- 红色印章 -->
+            <rect x="24" y="19" width="4" height="5" rx="0.8" fill="#dc2626"/>
+            <line x1="14" y1="8" x2="26" y2="8" stroke="#64748b" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>`;
+      }
+
+      if (style === 'yinghehua') {
+        // 硬荷花：经典荷花翠绿主色调 + 明黄/金边 + 粉白盛开荷花 + 墨绿荷叶
+        return `
+          <svg class="${sizeClass} shrink-0 drop-shadow-md" viewBox="0 0 40 54" fill="none">
+            <defs>
+              <linearGradient id="${uid}" x1="0" y1="0" x2="0" y2="54" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#15803d"/>
+                <stop offset="100%" stop-color="#065f46"/>
+              </linearGradient>
+            </defs>
+            <rect x="4" y="3" width="32" height="48" rx="3.5" fill="url(#${uid})" stroke="#facc15" stroke-width="1.5"/>
+            <line x1="4" y1="15" x2="36" y2="15" stroke="#fde047" stroke-width="1"/>
+            <!-- 金色顶部装饰 -->
+            <line x1="13" y1="9" x2="27" y2="9" stroke="#fef08a" stroke-width="1.8" stroke-linecap="round"/>
+            <!-- 墨绿荷叶 -->
+            <ellipse cx="20" cy="39" rx="11" ry="4" fill="#047857" stroke="#34d399" stroke-width="0.6"/>
+            <!-- 粉白荷花花瓣 -->
+            <path d="M20 22 C17 28, 17 34, 20 37 C23 34, 23 28, 20 22 Z" fill="#fbcfe8"/>
+            <path d="M20 37 C14 34, 12 29, 14 25 C17 27, 19 32, 20 37 Z" fill="#f472b6"/>
+            <path d="M20 37 C26 34, 28 29, 26 25 C23 27, 21 32, 20 37 Z" fill="#f472b6"/>
+            <circle cx="20" cy="34" r="1.8" fill="#fde047"/>
+          </svg>`;
+      }
+
+      if (style === 'ruanhehua') {
+        // 软荷花：三段式清新墨绿软包 + 顶部软包封口贴 + 金色腰线 + 雅致粉红荷花
+        return `
+          <svg class="${sizeClass} shrink-0 drop-shadow-md" viewBox="0 0 40 54" fill="none">
+            <defs>
+              <linearGradient id="${uid}" x1="0" y1="0" x2="40" y2="54" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#064e3b"/>
+                <stop offset="50%" stop-color="#047857"/>
+                <stop offset="100%" stop-color="#022c22"/>
+              </linearGradient>
+            </defs>
+            <rect x="4" y="4" width="32" height="47" rx="5.5" fill="url(#${uid})" stroke="#d97706" stroke-width="1.2"/>
+            <!-- 软包顶部封口贴 -->
+            <rect x="16" y="2" width="8" height="8" rx="1.5" fill="#fde68a" stroke="#b45309" stroke-width="0.7"/>
+            <!-- 三段式分割金线 -->
+            <line x1="5" y1="16" x2="35" y2="16" stroke="#fbbf24" stroke-width="0.9" stroke-opacity="0.8"/>
+            <line x1="5" y1="41" x2="35" y2="41" stroke="#fbbf24" stroke-width="0.9" stroke-opacity="0.8"/>
+            <!-- 柔美粉荷 -->
+            <ellipse cx="20" cy="35" rx="9.5" ry="3.2" fill="#065f46"/>
+            <path d="M20 20 C17.5 25, 17.5 31, 20 34 C22.5 31, 22.5 25, 20 20 Z" fill="#fce7f3"/>
+            <path d="M20 34 C14.5 31.5, 13 27, 15 23.5 C17.5 25.5, 19 30, 20 34 Z" fill="#fb7185"/>
+            <path d="M20 34 C25.5 31.5, 27 27, 25 23.5 C22.5 25.5, 21 30, 20 34 Z" fill="#fb7185"/>
+            <circle cx="20" cy="31.5" r="1.6" fill="#fef08a"/>
+          </svg>`;
+      }
+
+      if (style === 'yanyue') {
+        // 颜悦：深蓝细支硬盒 + 烫金边框 + 金色荷叶与粉色花瓣国风
+        return `
+          <svg class="${sizeClass} shrink-0 drop-shadow-md" viewBox="0 0 40 54" fill="none">
+            <defs>
+              <linearGradient id="${uid}" x1="0" y1="0" x2="35" y2="54" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#1e3a8a"/>
+                <stop offset="60%" stop-color="#172554"/>
+                <stop offset="100%" stop-color="#0f172a"/>
+              </linearGradient>
+            </defs>
+            <rect x="7" y="2" width="26" height="50" rx="3" fill="url(#${uid})" stroke="#f59e0b" stroke-width="1.3"/>
+            <line x1="7" y1="15" x2="33" y2="15" stroke="#fbbf24" stroke-width="0.9"/>
+            <!-- 金色泰山浮雕徽章 -->
+            <circle cx="20" cy="8.5" r="3" stroke="#fbbf24" stroke-width="1" fill="none"/>
+            <!-- 金荷叶与粉花瓣 -->
+            <path d="M11 39 Q20 33 29 39" stroke="#fbbf24" stroke-width="1.3" fill="none"/>
+            <path d="M20 22 C17 27, 17.5 32, 20 34.5 C22.5 32, 23 27, 20 22 Z" fill="#f9a8d4"/>
+            <path d="M20 34.5 C15.5 32, 14.5 28, 16.5 25.5 C18.2 27.5, 19.2 31, 20 34.5 Z" fill="#f472b6"/>
+            <path d="M20 34.5 C24.5 32, 25.5 28, 23.5 25.5 C21.8 27.5, 20.8 31, 20 34.5 Z" fill="#f472b6"/>
+            <circle cx="20" cy="44" r="1.2" fill="#fbbf24"/>
+          </svg>`;
+      }
+
+      if (style === 'zhongnanhai') {
+        // 中南海蓝莓：深蓝星空晶钻盒 + 发光蓝莓爆珠星球 + 屋脊蓝光
+        return `
+          <svg class="${sizeClass} shrink-0 drop-shadow-md" viewBox="0 0 40 54" fill="none">
+            <defs>
+              <linearGradient id="${uid}" x1="0" y1="0" x2="40" y2="54" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#0f172a"/>
+                <stop offset="50%" stop-color="#1e1b4b"/>
+                <stop offset="100%" stop-color="#0c4a6e"/>
+              </linearGradient>
+              <radialGradient id="${uid}_orb" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#e0f2fe"/>
+                <stop offset="45%" stop-color="#38bdf8"/>
+                <stop offset="100%" stop-color="#4f46e5"/>
+              </radialGradient>
+            </defs>
+            <rect x="4" y="3" width="32" height="48" rx="3.5" fill="url(#${uid})" stroke="#38bdf8" stroke-width="1.2"/>
+            <line x1="4" y1="14" x2="36" y2="14" stroke="#38bdf8" stroke-opacity="0.4" stroke-width="0.8"/>
+            <!-- 星光点缀 -->
+            <circle cx="11" cy="20" r="0.9" fill="#bae6fd"/>
+            <circle cx="30" cy="18" r="1.1" fill="#c4b5fd"/>
+            <circle cx="29" cy="34" r="0.8" fill="#7dd3fc"/>
+            <!-- 蓝莓爆珠星球与轨道环 -->
+            <ellipse cx="20" cy="28" rx="11" ry="3.5" transform="rotate(-22 20 28)" stroke="#7dd3fc" stroke-opacity="0.7" stroke-width="1"/>
+            <circle cx="20" cy="28" r="5.5" fill="url(#${uid}_orb)"/>
+            <!-- 底部中南海屋脊蓝光轮廓 -->
+            <path d="M8 44 L14 40 L20 42 L26 40 L32 44" stroke="#38bdf8" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>`;
+      }
+
+      // 通用自定义烟盒图标
+      const c = brand.color || '#f59e0b';
+      const initial = escapeHTML((brand.name || '烟').slice(0, 1));
+      return `
+        <svg class="${sizeClass} shrink-0 drop-shadow-md" viewBox="0 0 40 54" fill="none">
+          <rect x="5" y="3" width="30" height="48" rx="3.5" fill="#1e293b" stroke="${c}" stroke-width="1.5"/>
+          <rect x="5" y="3" width="30" height="12" rx="3" fill="${c}" fill-opacity="0.35"/>
+          <line x1="5" y1="15" x2="35" y2="15" stroke="${c}" stroke-width="1"/>
+          <text x="20" y="36" text-anchor="middle" fill="#f8fafc" font-size="13" font-weight="700" font-family="sans-serif">${initial}</text>
+        </svg>`;
+    }
+
+    function inferPackStyle(name) {
+      const n = String(name || '');
+      if (n.includes('银钗')) return 'yinchai';
+      if (n.includes('硬荷花')) return 'yinghehua';
+      if (n.includes('软荷花')) return 'ruanhehua';
+      if (n.includes('颜悦')) return 'yanyue';
+      if (n.includes('中南海') || n.includes('蓝莓')) return 'zhongnanhai';
+      return 'custom';
+    }
+
+    // =========================================================================
+    // STORAGE
+    // =========================================================================
+    function enrichBrand(b) {
+      const def = DEFAULT_BRANDS.find(d => d.id === b.id || d.name === b.name);
+      return {
+        ...b,
+        tar: (b.tar !== undefined && b.tar !== null && !isNaN(Number(b.tar))) ? Number(b.tar) : (def ? def.tar : 8),
+        nicotine: (b.nicotine !== undefined && b.nicotine !== null && !isNaN(Number(b.nicotine))) ? Number(b.nicotine) : (def ? def.nicotine : 0.8),
+        packStyle: b.packStyle || (def ? def.packStyle : inferPackStyle(b.name)),
+        isFrequent: b.isFrequent !== undefined ? b.isFrequent : true,
+      };
+    }
+
+    function hasUserActivity(parsed) {
+      if (!parsed) return false;
+      const hasRecords = Array.isArray(parsed.records) && parsed.records.length > 0;
+      const hasStock = Array.isArray(parsed.brands) && parsed.brands.some(b => (b.stockSticks || 0) > 0);
+      return hasRecords || hasStock;
+    }
+
+    function loadState() {
+      try {
+        const currentRaw = localStorage.getItem(STORAGE_KEY);
+        const currentParsed = currentRaw ? JSON.parse(currentRaw) : null;
+
+        // 如果当前版本已有记录或库存，直接加载
+        if (currentParsed && hasUserActivity(currentParsed) && Array.isArray(currentParsed.brands) && currentParsed.brands.length > 0) {
+          state.brands = currentParsed.brands.map(enrichBrand);
+          state.records = Array.isArray(currentParsed.records) ? currentParsed.records : [];
+          return;
+        }
+
+        // 否则自动从旧版本 key (v2 / v1) 迁移恢复历史数据
+        const legacyKeys = ['smoke_track_app_v2', 'smoke_track_app_v1'];
+        for (const key of legacyKeys) {
+          const raw = localStorage.getItem(key);
+          if (!raw) continue;
+          const parsed = JSON.parse(raw);
+          if (hasUserActivity(parsed) && Array.isArray(parsed.brands) && parsed.brands.length > 0) {
+            state.brands = parsed.brands.map(enrichBrand);
+            state.records = Array.isArray(parsed.records) ? parsed.records : [];
+            saveState();
+            setTimeout(() => showToast('已自动从本地历史记录恢复你的数据', 'success'), 300);
+            return;
+          }
+        }
+
+        // 若旧版本也无记录，但当前版本已有自定义烟种
+        if (currentParsed && Array.isArray(currentParsed.brands) && currentParsed.brands.length > 0) {
+          state.brands = currentParsed.brands.map(enrichBrand);
+          state.records = Array.isArray(currentParsed.records) ? currentParsed.records : [];
+          return;
+        }
+      } catch (e) {
+        updateStorageBadge(false);
+      }
+      state.brands = JSON.parse(JSON.stringify(DEFAULT_BRANDS));
+      state.records = [];
+      saveState();
+    }
+
+    function saveState() {
+      try {
+        const payload = JSON.stringify({ brands: state.brands, records: state.records });
+        localStorage.setItem(STORAGE_KEY, payload);
+        updateStorageBadge(true);
+      } catch (e) {
+        updateStorageBadge(false);
+      }
+    }
+
+    function updateStorageBadge(ok) {
+      const badge = document.getElementById('storageBadge');
+      if (!badge) return;
+      if (ok) {
+        badge.textContent = '本地已连接';
+        badge.className = 'px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 whitespace-nowrap';
+      } else {
+        badge.textContent = '内存模式 (存储受限)';
+        badge.className = 'px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/15 text-amber-400 border border-amber-500/30 whitespace-nowrap';
+      }
+    }
+
+    function formatMoney(n) {
+      const val = Number(n);
+      return '¥' + (isNaN(val) ? '0.00' : val.toFixed(2));
+    }
+
+    function formatSticksToPacks(sticks, perPack) {
+      const spp = perPack > 0 ? perPack : 20;
+      const packs = Math.floor(sticks / spp);
+      const rem = sticks % spp;
+      if (packs === 0) return `${rem} 根`;
+      if (rem === 0) return `${packs} 包 (${sticks} 根)`;
+      return `${packs} 包 ${rem} 根`;
+    }
+
+    function getDateKey(ts) {
+      const d = new Date(ts);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+
+    function formatTime(ts) {
+      const d = new Date(ts);
+      return `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    }
+
+    function escapeHTML(str) {
+      return String(str || '').replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[m]));
+    }
+
+    function getRecordTar(r) {
+      if (r.type !== 'out') return 0;
+      if (typeof r.tarTotal === 'number') return r.tarTotal;
+      const b = state.brands.find(x => x.id === r.brandId);
+      return (r.qty || 0) * (b ? (b.tar || 0) : 0);
+    }
+
+    function getRecordNicotine(r) {
+      if (r.type !== 'out') return 0;
+      if (typeof r.nicotineTotal === 'number') return r.nicotineTotal;
+      const b = state.brands.find(x => x.id === r.brandId);
+      return (r.qty || 0) * (b ? (b.nicotine || 0) : 0);
+    }
+
+    function spawnParticle(text, colorClass, sourceEl) {
+      const p = document.createElement('div');
+      p.className = `float-particle text-sm sm:text-base ${colorClass}`;
+      p.textContent = text;
+      let x = window.innerWidth / 2;
+      let y = window.innerHeight / 2;
+      if (sourceEl && typeof sourceEl.getBoundingClientRect === 'function') {
+        const rect = sourceEl.getBoundingClientRect();
+        x = rect.left + rect.width / 2 - 24;
+        y = rect.top;
+      }
+      p.style.left = `${Math.max(16, Math.min(window.innerWidth - 96, x))}px`;
+      p.style.top = `${Math.max(24, y)}px`;
+      document.body.appendChild(p);
+      setTimeout(() => p.remove(), 980);
+    }
+
+    function animateNumber(el, targetValue, prefix = '', suffix = '', decimals = 0) {
+      if (!el) return;
+      const startVal = parseFloat(el.dataset.val || '0') || 0;
+      const endVal = Number(targetValue) || 0;
+      el.dataset.val = endVal;
+      if (Math.abs(startVal - endVal) < 0.01) {
+        el.textContent = prefix + endVal.toFixed(decimals) + suffix;
+        return;
+      }
+      const duration = 380;
+      const startTime = performance.now();
+      function step(now) {
+        const progress = Math.min((now - startTime) / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const curr = startVal + (endVal - startVal) * eased;
+        el.textContent = prefix + curr.toFixed(decimals) + suffix;
+        if (progress < 1) requestAnimationFrame(step);
+        else el.textContent = prefix + endVal.toFixed(decimals) + suffix;
+      }
+      requestAnimationFrame(step);
+    }
+
+    function showToast(message, type = 'info', undoCallback = null) {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      const borderMap = {
+        success: 'border-emerald-500/40 text-emerald-300',
+        warn: 'border-amber-500/40 text-amber-300',
+        error: 'border-rose-500/40 text-rose-300',
+        info: 'border-slate-700 text-slate-200',
+      };
+      toast.className = `pointer-events-auto glass-panel rounded-2xl px-4 py-3 text-xs sm:text-sm shadow-xl border flex items-center justify-between gap-3 modal-animate ${borderMap[type] || borderMap.info}`;
+      const span = document.createElement('span');
+      span.textContent = message;
+      toast.appendChild(span);
+
+      if (undoCallback) {
+        const btn = document.createElement('button');
+        btn.textContent = '撤销';
+        btn.className = 'px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-400 font-semibold text-xs shrink-0';
+        btn.addEventListener('click', () => {
+          undoCallback();
+          toast.remove();
+        });
+        toast.appendChild(btn);
+      }
+
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.25s ease';
+        setTimeout(() => toast.remove(), 260);
+      }, undoCallback ? 4500 : 2500);
+    }
+
+    function openConfirm(title, message, onOk) {
+      document.getElementById('confirmTitle').textContent = title;
+      document.getElementById('confirmMessage').textContent = message;
+      confirmCallback = onOk;
+      const modal = document.getElementById('confirmModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeConfirm() {
+      const modal = document.getElementById('confirmModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      confirmCallback = null;
+    }
+
+    // =========================================================================
+    // CORE ACTIONS
+    // =========================================================================
+    function executeOneTapAction(mode, brandId, sourceEl) {
+      const brand = state.brands.find(b => b.id === brandId);
+      if (!brand) return;
+      const spp = brand.sticksPerPack > 0 ? brand.sticksPerPack : 20;
+
+      if (mode === 'in') {
+        brand.stockSticks = (brand.stockSticks || 0) + spp;
+        const rec = {
+          id: 'rec_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+          type: 'in',
+          brandId: brand.id,
+          brandName: brand.name,
+          qty: 1,
+          unit: 'pack',
+          sticksDelta: spp,
+          amount: brand.price || 0,
+          tarTotal: 0,
+          nicotineTotal: 0,
+          note: '一键进货',
+          timestamp: Date.now(),
+        };
+        state.records.unshift(rec);
+        saveState();
+        renderAll();
+        renderTapActionGrid();
+        spawnParticle(`+${spp} 根 (1包)`, 'text-amber-400', sourceEl);
+        showToast(`进货成功：${brand.name} +1 包`, 'success', () => revertRecord(rec.id));
+      } else {
+        const before = brand.stockSticks || 0;
+        if (before <= 0) {
+          showToast(`${brand.name} 当前无库存`, 'warn');
+          renderTapActionGrid();
+          return;
+        }
+        brand.stockSticks = Math.max(0, before - 1);
+        const unitStickPrice = spp > 0 ? (brand.price / spp) : 0;
+        const tarVal = Number(brand.tar) || 0;
+        const nicVal = Number(brand.nicotine) || 0;
+
+        const rec = {
+          id: 'rec_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+          type: 'out',
+          brandId: brand.id,
+          brandName: brand.name,
+          qty: 1,
+          unit: 'stick',
+          sticksDelta: -1,
+          amount: unitStickPrice,
+          tarTotal: tarVal,
+          nicotineTotal: nicVal,
+          note: '一键出货',
+          timestamp: Date.now(),
+        };
+        state.records.unshift(rec);
+        saveState();
+        renderAll();
+        renderTapActionGrid();
+        spawnParticle(`-1 根 · 焦油+${tarVal}mg`, 'text-rose-400', sourceEl);
+        showToast(`出货成功：${brand.name} -1 根`, 'info', () => revertRecord(rec.id));
+      }
+    }
+
+    function revertRecord(recordId) {
+      const idx = state.records.findIndex(r => r.id === recordId);
+      if (idx === -1) return;
+      const rec = state.records[idx];
+      const brand = state.brands.find(b => b.id === rec.brandId);
+      if (brand) {
+        brand.stockSticks = Math.max(0, (brand.stockSticks || 0) - rec.sticksDelta);
+      }
+      state.records.splice(idx, 1);
+      saveState();
+      renderAll();
+      if (!document.getElementById('actionModal').classList.contains('hidden')) {
+        renderTapActionGrid();
+      }
+      showToast('已撤销该条记录并同步库存', 'info');
+    }
+
+    // =========================================================================
+    // RENDERING
+    // =========================================================================
+    function renderAll() {
+      renderHome();
+      renderKPIs();
+      renderCharts();
+      renderCatalog();
+      renderRecords();
+      renderDataStats();
+      lucide.createIcons();
+    }
+
+    function renderHome() {
+      const todayKey = getDateKey(Date.now());
+      let todayOutSticks = 0;
+      let todayTar = 0;
+      let todayNic = 0;
+
+      state.records.forEach(r => {
+        if (getDateKey(r.timestamp) === todayKey && r.type === 'out') {
+          todayOutSticks += r.qty;
+          todayTar += getRecordTar(r);
+          todayNic += getRecordNicotine(r);
+        }
+      });
+
+      let totalSticks = 0;
+      state.brands.forEach(b => { totalSticks += (b.stockSticks || 0); });
+
+      animateNumber(document.getElementById('homeTodaySticks'), todayOutSticks);
+      document.getElementById('headerSubtitle').textContent = `今日抽烟 ${todayOutSticks} 根 · 库存 ${totalSticks} 根`;
+      document.getElementById('homeSubStatus').textContent = todayOutSticks > 0
+        ? `今日摄入焦油 ${todayTar.toFixed(1)} mg · 尼古丁 ${todayNic.toFixed(1)} mg`
+        : '点击下方「进货」或「出货」快捷记录';
+
+      document.getElementById('homeInventorySummary').textContent = `${totalSticks} 根`;
+
+      const listEl = document.getElementById('homeInventoryList');
+      if (state.brands.length === 0) {
+        listEl.innerHTML = `<div class="col-span-full py-4 text-center text-xs text-slate-400">暂无烟种，请前往「烟种与价格」添加</div>`;
+        return;
+      }
+
+      listEl.innerHTML = state.brands.map(b => {
+        const spp = b.sticksPerPack > 0 ? b.sticksPerPack : 20;
+        const sticks = b.stockSticks || 0;
+        const rem = sticks % spp;
+        const pct = sticks === 0 ? 0 : (rem === 0 ? 100 : Math.round((rem / spp) * 100));
+        return `
+          <div class="rounded-xl bg-slate-900/75 border border-slate-800/80 p-2.5 flex items-center gap-3">
+            ${renderPackIcon(b, 'w-8 h-11')}
+            <div class="flex-1 min-w-0 space-y-1.5">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-xs font-semibold text-white truncate">${escapeHTML(b.name)}</span>
+                <span class="text-xs font-semibold ${sticks > 0 ? 'text-emerald-400' : 'text-slate-500'} shrink-0">${formatSticksToPacks(sticks, spp)}</span>
+              </div>
+              <div class="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                <div class="h-full rounded-full transition-all duration-500" style="width: ${pct}%; background-color: ${b.color}"></div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function toggleInventoryAccordion() {
+      state.inventoryExpanded = !state.inventoryExpanded;
+      const acc = document.getElementById('inventoryAccordion');
+      const chev = document.getElementById('toggleInventoryChevron');
+      const lbl = document.getElementById('toggleInventoryLabel');
+      if (state.inventoryExpanded) {
+        acc.classList.add('open');
+        chev.style.transform = 'rotate(180deg)';
+        lbl.textContent = '收起明细';
+      } else {
+        acc.classList.remove('open');
+        chev.style.transform = 'rotate(0deg)';
+        lbl.textContent = '展开明细';
+      }
+    }
+
+    function renderKPIs() {
+      const now = new Date();
+      const todayKey = getDateKey(now.getTime());
+      const monthPrefix = todayKey.slice(0, 7);
+
+      let totalSticks = 0;
+      let totalStockValue = 0;
+      state.brands.forEach(b => {
+        const s = b.stockSticks || 0;
+        const spp = b.sticksPerPack > 0 ? b.sticksPerPack : 20;
+        totalSticks += s;
+        totalStockValue += (s / spp) * (b.price || 0);
+      });
+
+      let todayOutSticks = 0;
+      let todayOutCost = 0;
+      let todayTar = 0;
+      let todayNic = 0;
+      let monthInCost = 0;
+      let monthInPacks = 0;
+      let monthInSticks = 0;
+      let monthOutSticks = 0;
+      let monthTar = 0;
+      let monthNic = 0;
+
+      state.records.forEach(r => {
+        const key = getDateKey(r.timestamp);
+        if (key === todayKey && r.type === 'out') {
+          todayOutSticks += r.qty;
+          todayOutCost += r.amount || 0;
+          todayTar += getRecordTar(r);
+          todayNic += getRecordNicotine(r);
+        }
+        if (key.startsWith(monthPrefix)) {
+          if (r.type === 'in') {
+            monthInCost += r.amount || 0;
+            monthInPacks += r.qty;
+            monthInSticks += r.sticksDelta || 0;
+          } else if (r.type === 'out') {
+            monthOutSticks += r.qty;
+            monthTar += getRecordTar(r);
+            monthNic += getRecordNicotine(r);
+          }
+        }
+      });
+
+      const dayOfMonth = Math.max(1, now.getDate());
+      const dailyAvg = monthOutSticks / dayOfMonth;
+
+      animateNumber(document.getElementById('kpiStockSticks'), totalSticks);
+      document.getElementById('kpiStockPacks').textContent = `约 ${(totalSticks / 20).toFixed(1)} 包 · 估值 ${formatMoney(totalStockValue)}`;
+
+      animateNumber(document.getElementById('kpiTodaySticks'), todayOutSticks);
+      document.getElementById('kpiTodayCost').textContent = `折合花费 ${formatMoney(todayOutCost)}`;
+
+      animateNumber(document.getElementById('kpiMonthSpent'), monthInCost, '¥', '', 0);
+      document.getElementById('kpiMonthPacks').textContent = `共买入 ${monthInPacks} 包 (${monthInSticks} 根)`;
+
+      animateNumber(document.getElementById('kpiMonthOutSticks'), monthOutSticks);
+      document.getElementById('kpiDailyAvg').textContent = `本月日均 ${dailyAvg.toFixed(1)} 根`;
+
+      // 焦油 & 尼古丁 KPI
+      animateNumber(document.getElementById('kpiTodayTar'), todayTar, '', '', 1);
+      animateNumber(document.getElementById('kpiTodayNicotine'), todayNic, '', '', 1);
+      animateNumber(document.getElementById('kpiMonthTar'), monthTar, '', '', 1);
+      animateNumber(document.getElementById('kpiMonthNicotine'), monthNic, '', '', 1);
+
+      const avgTar = monthOutSticks > 0 ? (monthTar / monthOutSticks) : 0;
+      const avgNic = monthOutSticks > 0 ? (monthNic / monthOutSticks) : 0;
+      document.getElementById('kpiAvgTarPerStick').textContent = `单支均值 ${avgTar.toFixed(1)} mg`;
+      document.getElementById('kpiAvgNicPerStick').textContent = `单支均值 ${avgNic.toFixed(2)} mg`;
+    }
+
+    function renderCharts() {
+      const labels = [];
+      const outData = [];
+      const inData = [];
+      const tarData = [];
+      const nicData = [];
+      const now = new Date();
+
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(now);
+        d.setDate(now.getDate() - i);
+        const key = getDateKey(d.getTime());
+        labels.push(`${d.getMonth() + 1}/${d.getDate()}`);
+
+        let dayOut = 0;
+        let dayIn = 0;
+        let dayTar = 0;
+        let dayNic = 0;
+        state.records.forEach(r => {
+          if (getDateKey(r.timestamp) === key) {
+            if (r.type === 'out') {
+              dayOut += r.qty;
+              dayTar += getRecordTar(r);
+              dayNic += getRecordNicotine(r);
+            } else if (r.type === 'in') {
+              dayIn += r.qty;
+            }
+          }
+        });
+        outData.push(dayOut);
+        inData.push(dayIn);
+        tarData.push(Number(dayTar.toFixed(1)));
+        nicData.push(Number(dayNic.toFixed(2)));
+      }
+
+      const trendCtx = document.getElementById('trendChart').getContext('2d');
+      if (trendChartInstance) trendChartInstance.destroy();
+      trendChartInstance = new Chart(trendCtx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label: '出货 (根)', data: outData, backgroundColor: 'rgba(251, 113, 133, 0.75)', borderRadius: 6, order: 2 },
+            { label: '进货 (包)', data: inData, type: 'line', borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.2)', tension: 0.35, pointRadius: 4, pointBackgroundColor: '#f59e0b', order: 1 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 11 } } },
+            y: { beginAtZero: true, grid: { color: 'rgba(148, 163, 184, 0.08)' }, ticks: { color: '#64748b', precision: 0 } }
+          }
+        }
+      });
+
+      // Health Chart (Tar + Nicotine)
+      const healthCtx = document.getElementById('healthChart').getContext('2d');
+      if (healthChartInstance) healthChartInstance.destroy();
+      healthChartInstance = new Chart(healthCtx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: '焦油 (mg)',
+              data: tarData,
+              backgroundColor: 'rgba(168, 85, 247, 0.65)',
+              borderRadius: 6,
+              yAxisID: 'y',
+            },
+            {
+              label: '尼古丁 (mg)',
+              data: nicData,
+              type: 'line',
+              borderColor: '#22d3ee',
+              backgroundColor: 'rgba(34, 211, 238, 0.18)',
+              tension: 0.35,
+              pointRadius: 4,
+              pointBackgroundColor: '#22d3ee',
+              yAxisID: 'y1',
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 11 } } },
+            y: {
+              type: 'linear',
+              position: 'left',
+              beginAtZero: true,
+              grid: { color: 'rgba(148, 163, 184, 0.08)' },
+              ticks: { color: '#c084fc', font: { size: 10 } }
+            },
+            y1: {
+              type: 'linear',
+              position: 'right',
+              beginAtZero: true,
+              grid: { drawOnChartArea: false },
+              ticks: { color: '#22d3ee', font: { size: 10 } }
+            }
+          }
+        }
+      });
+
+      const brandTotals = {};
+      state.records.forEach(r => {
+        if (r.type === 'out') brandTotals[r.brandId] = (brandTotals[r.brandId] || 0) + r.qty;
+      });
+
+      const entries = Object.entries(brandTotals).filter(([, v]) => v > 0);
+      const emptyEl = document.getElementById('brandChartEmpty');
+      const brandCtx = document.getElementById('brandChart').getContext('2d');
+
+      if (brandChartInstance) brandChartInstance.destroy();
+      if (entries.length === 0) {
+        emptyEl.classList.remove('hidden');
+        return;
+      }
+      emptyEl.classList.add('hidden');
+
+      const bLabels = [];
+      const bValues = [];
+      const bColors = [];
+      entries.forEach(([bid, val]) => {
+        const b = state.brands.find(x => x.id === bid);
+        bLabels.push(b ? b.name : '已删除烟种');
+        bValues.push(val);
+        bColors.push(b ? b.color : '#64748b');
+      });
+
+      brandChartInstance = new Chart(brandCtx, {
+        type: 'doughnut',
+        data: { labels: bLabels, datasets: [{ data: bValues, backgroundColor: bColors, borderWidth: 0, hoverOffset: 6 }] },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '66%',
+          plugins: { legend: { position: 'bottom', labels: { color: '#cbd5e1', boxWidth: 10, padding: 12, font: { size: 11 } } } }
+        }
+      });
+    }
+
+    function renderCatalog() {
+      const container = document.getElementById('catalogList');
+      if (state.brands.length === 0) {
+        container.innerHTML = `<div class="col-span-full glass-panel rounded-2xl p-8 text-center text-sm text-slate-400">暂无烟种，点击右上角「新增烟种」添加</div>`;
+        return;
+      }
+
+      container.innerHTML = state.brands.map(b => {
+        const spp = b.sticksPerPack > 0 ? b.sticksPerPack : 20;
+        const perStick = (b.price / spp).toFixed(2);
+        return `
+          <div class="glass-panel rounded-2xl p-4 flex flex-col justify-between gap-3.5 border border-slate-800">
+            <div class="flex items-start justify-between gap-2">
+              <div class="flex items-center gap-3 min-w-0">
+                ${renderPackIcon(b, 'w-10 h-13')}
+                <div class="min-w-0">
+                  <div class="flex items-center gap-1.5">
+                    <h4 class="font-bold text-white text-sm truncate">${escapeHTML(b.name)}</h4>
+                    ${b.isFrequent ? '<span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/25 shrink-0">常抽</span>' : ''}
+                  </div>
+                  <span class="text-xs text-slate-400 block truncate">${escapeHTML(b.tag || '标准规格')}</span>
+                  <div class="flex items-center gap-2 mt-1 text-[11px]">
+                    <span class="text-purple-300">焦油 ${b.tar}mg</span>
+                    <span class="text-slate-600">·</span>
+                    <span class="text-cyan-300">尼古丁 ${b.nicotine}mg</span>
+                  </div>
+                </div>
+              </div>
+              <span class="text-base font-bold text-amber-400 shrink-0">¥${b.price}</span>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 text-center bg-slate-900/70 rounded-xl p-2 border border-slate-800/80 text-xs">
+              <div>
+                <div class="text-slate-400 text-[11px]">规格</div>
+                <div class="font-semibold text-white mt-0.5">${spp} 根/包</div>
+              </div>
+              <div>
+                <div class="text-slate-400 text-[11px]">单根均价</div>
+                <div class="font-semibold text-white mt-0.5">¥${perStick}</div>
+              </div>
+              <div>
+                <div class="text-slate-400 text-[11px]">当前库存</div>
+                <div class="font-semibold text-emerald-400 mt-0.5">${b.stockSticks || 0} 根</div>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between gap-2">
+              <button onclick="toggleFrequent('${b.id}')" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-medium flex items-center gap-1 ${b.isFrequent ? 'text-amber-300' : 'text-slate-400'}">
+                <i data-lucide="star" class="w-3.5 h-3.5 ${b.isFrequent ? 'fill-amber-400 text-amber-400' : ''}"></i> ${b.isFrequent ? '已设常抽' : '设为常抽'}
+              </button>
+              <div class="flex items-center gap-1.5">
+                <button onclick="openBrandModal('${b.id}')" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300" title="编辑">
+                  <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                </button>
+                <button onclick="deleteBrand('${b.id}')" class="p-2 rounded-xl bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400" title="删除">
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function toggleFrequent(brandId) {
+      const b = state.brands.find(x => x.id === brandId);
+      if (!b) return;
+      b.isFrequent = !b.isFrequent;
+      saveState();
+      renderAll();
+      showToast(b.isFrequent ? `已将「${b.name}」设为常抽` : `已取消「${b.name}」常抽标记`, 'info');
+    }
+
+    function renderRecords() {
+      const filterType = document.getElementById('filterType').value;
+      const filterBrand = document.getElementById('filterBrand').value;
+      const search = document.getElementById('filterSearch').value.trim().toLowerCase();
+
+      const brandSel = document.getElementById('filterBrand');
+      const prevVal = brandSel.value;
+      brandSel.innerHTML = `<option value="all">全部烟种</option>` +
+        state.brands.map(b => `<option value="${b.id}">${escapeHTML(b.name)}</option>`).join('');
+      if ([...brandSel.options].some(o => o.value === prevVal)) brandSel.value = prevVal;
+
+      const filtered = state.records.filter(r => {
+        if (filterType !== 'all' && r.type !== filterType) return false;
+        if (filterBrand !== 'all' && r.brandId !== filterBrand) return false;
+        if (search) {
+          const hay = `${r.brandName} ${r.note || ''}`.toLowerCase();
+          if (!hay.includes(search)) return false;
+        }
+        return true;
+      });
+
+      document.getElementById('recordsSummary').textContent = `共 ${filtered.length} 条记录`;
+      const list = document.getElementById('recordsList');
+
+      if (filtered.length === 0) {
+        list.innerHTML = `<div class="p-10 text-center text-sm text-slate-400">暂无匹配的出入货记录</div>`;
+        return;
+      }
+
+      list.innerHTML = filtered.map(r => {
+        const isIn = r.type === 'in';
+        const brandObj = state.brands.find(b => b.id === r.brandId) || { name: r.brandName, color: '#64748b' };
+        const tar = getRecordTar(r);
+        const nic = getRecordNicotine(r);
+        return `
+          <div class="p-3.5 sm:px-5 flex items-center justify-between gap-3 hover:bg-slate-800/30 transition-colors">
+            <div class="flex items-center gap-3 min-w-0">
+              ${renderPackIcon(brandObj, 'w-8 h-10')}
+              <div class="min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="font-semibold text-sm text-white truncate">${escapeHTML(r.brandName)}</span>
+                  <span class="text-xs px-2 py-0.5 rounded-md font-medium ${isIn ? 'bg-amber-500/15 text-amber-300' : 'bg-rose-500/15 text-rose-300'}">
+                    ${isIn ? `进货 +${r.qty} 包` : `出货 -${r.qty} 根`}
+                  </span>
+                </div>
+                <div class="text-xs text-slate-400 mt-0.5 truncate">
+                  ${formatTime(r.timestamp)}${!isIn ? ` · 焦油 ${tar.toFixed(1)}mg · 尼古丁 ${nic.toFixed(1)}mg` : ''}
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-3 shrink-0">
+              <div class="text-right">
+                <div class="text-sm font-semibold ${isIn ? 'text-amber-400' : 'text-slate-300'}">${formatMoney(r.amount)}</div>
+                <div class="text-[11px] text-slate-500">${isIn ? `+${r.sticksDelta} 根` : '预估烟值'}</div>
+              </div>
+              <button onclick="confirmDeleteRecord('${r.id}')" class="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-slate-800 transition-colors" title="删除并回滚库存">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderDataStats() {
+      document.getElementById('statBrandCount').textContent = state.brands.length;
+      document.getElementById('statRecordCount').textContent = state.records.length;
+      const totalSpent = state.records.filter(r => r.type === 'in').reduce((sum, r) => sum + (r.amount || 0), 0);
+      document.getElementById('statTotalSpent').textContent = formatMoney(totalSpent);
+
+      let bytes = 0;
+      try {
+        bytes = new Blob([localStorage.getItem(STORAGE_KEY) || '']).size;
+      } catch (e) {
+        bytes = new Blob([JSON.stringify({ brands: state.brands, records: state.records })]).size;
+      }
+      document.getElementById('statStorageSize').textContent = (bytes / 1024).toFixed(1) + ' KB';
+    }
+
+    // =========================================================================
+    // 极简进出货弹窗 (出货隐藏 0 库存烟种)
+    // =========================================================================
+    function openActionModal(mode = 'in') {
+      if (state.brands.length === 0) {
+        showToast('请先添加至少一个烟种', 'warn');
+        switchTab('catalog');
+        openBrandModal();
+        return;
+      }
+      state.actionMode = mode;
+      state.showAllInPicker = false;
+      syncActionModalUI();
+
+      const modal = document.getElementById('actionModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      lucide.createIcons();
+    }
+
+    function closeActionModal() {
+      const modal = document.getElementById('actionModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function syncActionModalUI() {
+      const isIn = state.actionMode === 'in';
+      const btnIn = document.getElementById('modeBtnIn');
+      const btnOut = document.getElementById('modeBtnOut');
+      const title = document.getElementById('actionModalTitle');
+      const badge = document.getElementById('actionModeBadge');
+      const animIn = document.getElementById('animVisualIn');
+      const animOut = document.getElementById('animVisualOut');
+      const pickerLabel = document.getElementById('pickerSectionLabel');
+      const toggleAllBtn = document.getElementById('toggleShowAllBrandsBtn');
+
+      if (isIn) {
+        title.textContent = '快捷进货';
+        badge.textContent = '点一下 +1 包';
+        badge.className = 'text-[11px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300';
+        btnIn.className = 'py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-1.5 bg-amber-500 text-slate-950 shadow';
+        btnOut.className = 'py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-1.5 text-slate-400 hover:text-white';
+        animIn.classList.remove('hidden');
+        animOut.classList.add('hidden');
+        pickerLabel.innerHTML = '<i data-lucide="star" class="w-3.5 h-3.5 fill-amber-400"></i> 常抽的烟';
+        toggleAllBtn.classList.remove('hidden');
+      } else {
+        title.textContent = '快捷出货';
+        badge.textContent = '点一下 -1 根';
+        badge.className = 'text-[11px] px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300';
+        btnOut.className = 'py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-1.5 bg-gradient-to-r from-orange-500 to-rose-500 text-white shadow';
+        btnIn.className = 'py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-1.5 text-slate-400 hover:text-white';
+        animOut.classList.remove('hidden');
+        animIn.classList.add('hidden');
+        pickerLabel.innerHTML = '<i data-lucide="boxes" class="w-3.5 h-3.5 text-emerald-400"></i> 当前在库烟种';
+        toggleAllBtn.classList.add('hidden');
+      }
+
+      renderTapActionGrid();
+      lucide.createIcons();
+    }
+
+    function renderTapActionGrid() {
+      const isIn = state.actionMode === 'in';
+      const grid = document.getElementById('tapActionGrid');
+
+      let listToShow = [];
+      if (isIn) {
+        const frequentBrands = state.brands.filter(b => b.isFrequent);
+        listToShow = (state.showAllInPicker || frequentBrands.length === 0) ? state.brands : frequentBrands;
+        document.getElementById('toggleShowAllBrandsBtn').textContent = state.showAllInPicker ? '只看常抽' : `查看全部 (${state.brands.length})`;
+      } else {
+        // 出货模式：仅展示库存 > 0 的烟种
+        listToShow = state.brands.filter(b => (b.stockSticks || 0) > 0);
+      }
+
+      if (!isIn && listToShow.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-2 rounded-2xl bg-slate-900/70 border border-slate-800 p-6 text-center space-y-3">
+            <div class="w-10 h-10 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center mx-auto">
+              <i data-lucide="package-x" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <div class="text-sm font-semibold text-white">当前没有在库烟种</div>
+              <p class="text-xs text-slate-400 mt-1">库存为 0 的烟种已自动隐藏，请先去进货补充</p>
+            </div>
+            <button type="button" onclick="switchModalToIn()" class="btn-tap px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs">
+              立即去进货
+            </button>
+          </div>`;
+        lucide.createIcons();
+        return;
+      }
+
+      grid.innerHTML = listToShow.map(b => {
+        const sticks = b.stockSticks || 0;
+        const spp = b.sticksPerPack > 0 ? b.sticksPerPack : 20;
+        const hoverBorder = isIn ? 'hover:border-amber-400/70 hover:bg-amber-500/10' : 'hover:border-rose-400/70 hover:bg-rose-500/10';
+        return `
+          <div data-brand-id="${b.id}"
+               class="tap-brand-card relative overflow-hidden select-none cursor-pointer rounded-2xl p-3 bg-slate-900/90 border border-slate-800 ${hoverBorder} transition-all flex flex-col justify-between gap-2 btn-tap">
+            <div class="flex items-center gap-2.5">
+              ${renderPackIcon(b, 'w-9 h-12')}
+              <div class="min-w-0 flex-1">
+                <div class="text-sm font-bold text-white truncate">${escapeHTML(b.name)}</div>
+                <div class="text-[11px] text-amber-400 font-medium">¥${b.price}/包</div>
+                <div class="text-[10px] text-slate-400 truncate">焦${b.tar} · 尼${b.nicotine}mg</div>
+              </div>
+            </div>
+            <div class="flex items-center justify-between text-[11px] pt-1.5 border-t border-slate-800/80">
+              <span class="${sticks > 0 ? 'text-emerald-400 font-medium' : 'text-slate-500'}">余 ${formatSticksToPacks(sticks, spp)}</span>
+              <span class="${isIn ? 'text-amber-400' : 'text-rose-400'} font-semibold">${isIn ? '+1包' : '-1根'}</span>
+            </div>
+            <div class="hold-bar"></div>
+          </div>
+        `;
+      }).join('');
+
+      grid.querySelectorAll('.tap-brand-card').forEach(card => {
+        const brandId = card.dataset.brandId;
+        let holdTimer = null;
+        let longPressed = false;
+        let startX = 0;
+        let startY = 0;
+
+        const startHold = (e) => {
+          longPressed = false;
+          const pt = e.touches ? e.touches[0] : e;
+          startX = pt.clientX;
+          startY = pt.clientY;
+          card.classList.add('holding');
+          holdTimer = setTimeout(() => {
+            longPressed = true;
+            card.classList.remove('holding');
+            if (navigator.vibrate) navigator.vibrate(25);
+            openBrandModal(brandId);
+          }, 500);
+        };
+
+        const cancelHold = () => {
+          if (holdTimer) {
+            clearTimeout(holdTimer);
+            holdTimer = null;
+          }
+          card.classList.remove('holding');
+        };
+
+        const moveCheck = (e) => {
+          const pt = e.touches ? e.touches[0] : e;
+          if (Math.abs(pt.clientX - startX) > 10 || Math.abs(pt.clientY - startY) > 10) {
+            cancelHold();
+          }
+        };
+
+        card.addEventListener('pointerdown', startHold);
+        card.addEventListener('pointermove', moveCheck);
+        card.addEventListener('pointerleave', cancelHold);
+        card.addEventListener('pointercancel', cancelHold);
+        card.addEventListener('pointerup', () => {
+          cancelHold();
+          if (!longPressed) {
+            executeOneTapAction(state.actionMode, brandId, card);
+          }
+        });
+        card.addEventListener('contextmenu', (e) => e.preventDefault());
+      });
+    }
+
+    function switchModalToIn() {
+      state.actionMode = 'in';
+      syncActionModalUI();
+    }
+
+    function openBrandModal(brandId = null) {
+      const isEdit = Boolean(brandId);
+      const brand = isEdit ? state.brands.find(b => b.id === brandId) : null;
+      document.getElementById('brandModalTitle').textContent = isEdit ? '修改烟种属性' : '新增烟种';
+      document.getElementById('editBrandId').value = brand ? brand.id : '';
+      document.getElementById('brandNameInput').value = brand ? brand.name : '';
+      document.getElementById('brandPriceInput').value = brand ? brand.price : 25;
+      document.getElementById('brandSticksInput').value = brand ? brand.sticksPerPack : 20;
+      document.getElementById('brandTarInput').value = brand ? (brand.tar ?? 8) : 8;
+      document.getElementById('brandNicotineInput').value = brand ? (brand.nicotine ?? 0.8) : 0.8;
+      document.getElementById('brandTagInput').value = brand ? (brand.tag || '') : '';
+      document.getElementById('brandFrequentInput').checked = brand ? Boolean(brand.isFrequent) : true;
+      state.selectedColor = brand ? brand.color : BRAND_COLORS[0];
+      renderColorPicker();
+
+      const modal = document.getElementById('brandModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeBrandModal() {
+      const modal = document.getElementById('brandModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function renderColorPicker() {
+      const container = document.getElementById('brandColorPicker');
+      container.innerHTML = BRAND_COLORS.map(c => `
+        <button type="button" onclick="selectBrandColor('${c}')" class="w-7 h-7 rounded-full transition-transform ${state.selectedColor === c ? 'ring-2 ring-white scale-110' : 'opacity-70 hover:opacity-100'}" style="background-color: ${c}"></button>
+      `).join('');
+    }
+
+    function selectBrandColor(c) {
+      state.selectedColor = c;
+      renderColorPicker();
+    }
+
+    function deleteBrand(brandId) {
+      const b = state.brands.find(x => x.id === brandId);
+      if (!b) return;
+      openConfirm('删除烟种', `确定删除「${b.name}」吗？历史流水记录仍会保留。`, () => {
+        state.brands = state.brands.filter(x => x.id !== brandId);
+        saveState();
+        renderAll();
+        showToast(`已删除烟种 ${b.name}`, 'info');
+      });
+    }
+
+    function confirmDeleteRecord(recordId) {
+      openConfirm('删除流水记录', '删除该条记录并自动回滚对应库存？', () => {
+        revertRecord(recordId);
+      });
+    }
+
+    function switchTab(tabName) {
+      state.activeTab = tabName;
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+      const target = document.getElementById(`tab-${tabName}`);
+      if (target) target.classList.remove('hidden');
+
+      document.querySelectorAll('.nav-tab').forEach(btn => {
+        const isActive = btn.dataset.tab === tabName;
+        btn.className = isActive
+          ? 'nav-tab active flex items-center gap-1.5 px-3.5 py-2.5 text-xs sm:text-sm font-medium border-b-2 border-amber-400 text-amber-400 whitespace-nowrap transition-colors'
+          : 'nav-tab flex items-center gap-1.5 px-3.5 py-2.5 text-xs sm:text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-slate-200 whitespace-nowrap transition-colors';
+      });
+      if (tabName === 'stats') renderCharts();
+    }
+
+    function exportJSON() {
+      const dataStr = JSON.stringify({ brands: state.brands, records: state.records, exportedAt: new Date().toISOString() }, null, 2);
+      downloadBlob(dataStr, `smoke_track_backup_${getDateKey(Date.now())}.json`, 'application/json');
+      showToast('已导出 JSON 备份文件', 'success');
+    }
+
+    function exportCSV() {
+      const headers = ['时间', '类型', '烟种', '数量', '单位', '库存变动(根)', '金额(元)', '焦油(mg)', '尼古丁(mg)'];
+      const rows = state.records.map(r => [
+        new Date(r.timestamp).toLocaleString('zh-CN'),
+        r.type === 'in' ? '进货(买烟)' : '出货(抽烟)',
+        `"${(r.brandName || '').replace(/"/g, '""')}"`,
+        r.qty,
+        r.unit === 'pack' ? '包' : '根',
+        r.sticksDelta,
+        (r.amount || 0).toFixed(2),
+        getRecordTar(r).toFixed(1),
+        getRecordNicotine(r).toFixed(2)
+      ].join(','));
+      const csv = '\uFEFF' + [headers.join(','), ...rows].join('\n');
+      downloadBlob(csv, `smoke_track_records_${getDateKey(Date.now())}.csv`, 'text/csv;charset=utf-8;');
+      showToast('已导出 CSV 流水表格', 'success');
+    }
+
+    function downloadBlob(content, filename, type) {
+      const blob = new Blob([content], { type });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    function loadDemoData() {
+      openConfirm('载入示例数据', '这将在当前数据基础上生成近7天的模拟进货与出货流水（含焦油与尼古丁统计），确定继续吗？', () => {
+        if (state.brands.length === 0) state.brands = JSON.parse(JSON.stringify(DEFAULT_BRANDS));
+        const now = Date.now();
+        const dayMs = 86400000;
+        const sampleBrands = state.brands.slice(0, 3);
+        const demoRecords = [];
+
+        sampleBrands.forEach((b, i) => {
+          b.stockSticks = (b.stockSticks || 0) + 18 + i * 5;
+          demoRecords.push({
+            id: `demo_in_${i}_${now}`,
+            type: 'in',
+            brandId: b.id,
+            brandName: b.name,
+            qty: 2,
+            unit: 'pack',
+            sticksDelta: 2 * (b.sticksPerPack || 20),
+            amount: 2 * b.price,
+            tarTotal: 0,
+            nicotineTotal: 0,
+            note: '示例进货',
+            timestamp: now - (6 - i * 2) * dayMs
+          });
+        });
+
+        for (let d = 6; d >= 0; d--) {
+          const sticksToday = 3 + (d % 4);
+          const b = sampleBrands[d % sampleBrands.length];
+          const spp = b.sticksPerPack || 20;
+          demoRecords.push({
+            id: `demo_out_${d}_${now}`,
+            type: 'out',
+            brandId: b.id,
+            brandName: b.name,
+            qty: sticksToday,
+            unit: 'stick',
+            sticksDelta: -sticksToday,
+            amount: sticksToday * (b.price / spp),
+            tarTotal: sticksToday * (b.tar || 8),
+            nicotineTotal: sticksToday * (b.nicotine || 0.8),
+            note: '示例日常记录',
+            timestamp: now - d * dayMs + 3600000
+          });
+        }
+
+        state.records = [...demoRecords, ...state.records].sort((a, b) => b.timestamp - a.timestamp);
+        saveState();
+        renderAll();
+        showToast('已载入 7 天示例数据', 'success');
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadState();
+      renderAll();
+
+      document.querySelectorAll('.nav-tab').forEach(btn => {
+        btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+      });
+
+      document.getElementById('toggleInventoryBtn').addEventListener('click', toggleInventoryAccordion);
+      document.getElementById('btnHomeIn').addEventListener('click', () => openActionModal('in'));
+      document.getElementById('btnHomeOut').addEventListener('click', () => openActionModal('out'));
+
+      document.getElementById('closeActionModal').addEventListener('click', closeActionModal);
+      document.getElementById('modeBtnIn').addEventListener('click', () => { state.actionMode = 'in'; syncActionModalUI(); });
+      document.getElementById('modeBtnOut').addEventListener('click', () => { state.actionMode = 'out'; syncActionModalUI(); });
+      document.getElementById('toggleShowAllBrandsBtn').addEventListener('click', () => {
+        state.showAllInPicker = !state.showAllInPicker;
+        renderTapActionGrid();
+      });
+
+      document.getElementById('btnAddBrand').addEventListener('click', () => openBrandModal());
+      document.getElementById('closeBrandModal').addEventListener('click', closeBrandModal);
+      document.getElementById('saveBrandBtn').addEventListener('click', () => {
+        const id = document.getElementById('editBrandId').value;
+        const name = document.getElementById('brandNameInput').value.trim();
+        const price = Math.max(0, Number(document.getElementById('brandPriceInput').value) || 0);
+        const sticks = Math.max(1, Math.floor(Number(document.getElementById('brandSticksInput').value) || 20));
+        const tar = Math.max(0, Number(document.getElementById('brandTarInput').value) || 0);
+        const nicotine = Math.max(0, Number(document.getElementById('brandNicotineInput').value) || 0);
+        const tag = document.getElementById('brandTagInput').value.trim();
+        const isFrequent = document.getElementById('brandFrequentInput').checked;
+
+        if (!name) return showToast('请输入烟种名称', 'warn');
+
+        if (id) {
+          const existing = state.brands.find(b => b.id === id);
+          if (existing) {
+            existing.name = name;
+            existing.price = price;
+            existing.sticksPerPack = sticks;
+            existing.tar = tar;
+            existing.nicotine = nicotine;
+            existing.tag = tag;
+            existing.isFrequent = isFrequent;
+            existing.color = state.selectedColor;
+          }
+          showToast(`已更新「${name}」属性`, 'success');
+        } else {
+          state.brands.push({
+            id: 'b_' + Date.now(),
+            name,
+            price,
+            sticksPerPack: sticks,
+            tar,
+            nicotine,
+            tag,
+            isFrequent,
+            color: state.selectedColor,
+            packStyle: inferPackStyle(name),
+            stockSticks: 0
+          });
+          showToast(`已添加烟种「${name}」`, 'success');
+        }
+        saveState();
+        renderAll();
+        if (!document.getElementById('actionModal').classList.contains('hidden')) {
+          renderTapActionGrid();
+        }
+        closeBrandModal();
+      });
+
+      document.getElementById('confirmCancelBtn').addEventListener('click', closeConfirm);
+      document.getElementById('confirmOkBtn').addEventListener('click', () => {
+        if (typeof confirmCallback === 'function') confirmCallback();
+        closeConfirm();
+      });
+
+      document.getElementById('filterType').addEventListener('change', renderRecords);
+      document.getElementById('filterBrand').addEventListener('change', renderRecords);
+      document.getElementById('filterSearch').addEventListener('input', renderRecords);
+
+      document.getElementById('btnExportJSON').addEventListener('click', exportJSON);
+      document.getElementById('btnExportCSV').addEventListener('click', exportCSV);
+      document.getElementById('btnLoadDemo').addEventListener('click', loadDemoData);
+      document.getElementById('btnResetAll').addEventListener('click', () => {
+        openConfirm('清空本地数据', '将清除所有进出货流水并重置烟种库存为 0，无法恢复。确定继续吗？', () => {
+          state.brands = JSON.parse(JSON.stringify(DEFAULT_BRANDS));
+          state.records = [];
+          saveState();
+          renderAll();
+          showToast('已清空所有本地数据', 'info');
+        });
+      });
+
+      document.getElementById('inputImportJSON').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const parsed = JSON.parse(reader.result);
+            if (!Array.isArray(parsed.brands) || !Array.isArray(parsed.records)) {
+              return showToast('JSON 格式不正确', 'error');
+            }
+            state.brands = parsed.brands;
+            state.records = parsed.records;
+            saveState();
+            renderAll();
+            showToast('成功导入本地备份数据', 'success');
+          } catch (err) {
+            showToast('解析 JSON 文件失败', 'error');
+          }
+        };
+        reader.readAsText(file);
+        e.target.value = '';
+      });
+    });
+  </script>
+  <script>
+    if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>

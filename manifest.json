@@ -1,0 +1,24 @@
+{
+  "name": "烟迹 · 抽烟与买烟库存管理",
+  "short_name": "烟迹",
+  "description": "极简抽烟与买烟本地库存管理、焦油与尼古丁统计账本",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b0f17",
+  "theme_color": "#0b0f17",
+  "icons": [
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
