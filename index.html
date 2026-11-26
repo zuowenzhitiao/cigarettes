@@ -706,7 +706,7 @@
       { id: 'b_ruanhehua', name: '软荷花', price: 50, sticksPerPack: 20, tar: 10, nicotine: 1.0, tag: '三段式 · 软包', color: '#fb7185', packStyle: 'ruanhehua', stockSticks: 0, isFrequent: true },
       { id: 'b_yanyue', name: '颜悦', price: 20, sticksPerPack: 20, tar: 6, nicotine: 0.6, tag: '细支 · 蓝金国风', color: '#f59e0b', packStyle: 'yanyue', stockSticks: 0, isFrequent: true },
       { id: 'b_zhongnanhai', name: '中南海蓝莓', price: 23, sticksPerPack: 20, tar: 5, nicotine: 0.5, tag: '星空 · 蓝莓爆珠', color: '#a78bfa', packStyle: 'zhongnanhai', stockSticks: 0, isFrequent: true },
-      { id: 'b_daguanyuan', name: '大观园', price: 40, sticksPerPack: 20, tar: 6, nicotine: 0.6, tag: '细支 · 红楼国风', color: '#ef4444', packStyle: 'daguanyuan', stockSticks: 0, isFrequent: true },
+      { id: 'b_daguanyuan', name: '大观园', price: 35, sticksPerPack: 20, tar: 6, nicotine: 0.6, tag: '细支 · 爆冰薄荷', color: '#34d399', packStyle: 'daguanyuan', stockSticks: 0, isFrequent: true },
       { id: 'b_heiliqun', name: '黑利群', price: 48, sticksPerPack: 20, tar: 8, nicotine: 0.8, tag: '烤烟型 · 阳光硬盒', color: '#94a3b8', packStyle: 'heiliqun', stockSticks: 0, isFrequent: true },
     ];
     const LEGACY_SEEDED_BRAND_IDS = ['b_yinchai', 'b_yinghehua', 'b_ruanhehua', 'b_yanyue', 'b_zhongnanhai'];
@@ -863,29 +863,37 @@
       }
 
       if (style === 'daguanyuan') {
-        // 大观园：中国红细支硬盒 + 烫金古典边框 + 亭台园林剪影
+        // 大观园（爆冰）：淡青翠绿渐变细支盒 + 上部红楼亭台 + 中部金色琉璃瓦墙分割 + 下部冰晶薄荷爆珠
         return `
           <svg class="${sizeClass} shrink-0 drop-shadow-md" viewBox="0 0 40 54" fill="none">
             <defs>
-              <linearGradient id="${uid}" x1="0" y1="0" x2="36" y2="54" gradientUnits="userSpaceOnUse">
-                <stop offset="0%" stop-color="#dc2626"/>
-                <stop offset="55%" stop-color="#991b1b"/>
-                <stop offset="100%" stop-color="#7f1d1d"/>
+              <linearGradient id="${uid}" x1="7" y1="2" x2="33" y2="52" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#d1fae5"/>
+                <stop offset="42%" stop-color="#6ee7b7"/>
+                <stop offset="78%" stop-color="#10b981"/>
+                <stop offset="100%" stop-color="#047857"/>
               </linearGradient>
+              <radialGradient id="${uid}_ice" cx="45%" cy="40%" r="55%">
+                <stop offset="0%" stop-color="#ecfeff"/>
+                <stop offset="55%" stop-color="#67e8f9"/>
+                <stop offset="100%" stop-color="#059669"/>
+              </radialGradient>
             </defs>
-            <rect x="7" y="2" width="26" height="50" rx="3" fill="url(#${uid})" stroke="#fbbf24" stroke-width="1.3"/>
-            <rect x="9.5" y="4.5" width="21" height="45" rx="1.8" stroke="#fde68a" stroke-opacity="0.55" stroke-width="0.7" fill="none"/>
-            <line x1="7" y1="15" x2="33" y2="15" stroke="#fbbf24" stroke-width="0.9"/>
-            <!-- 顶部古典金徽 -->
-            <rect x="16" y="6.5" width="8" height="5" rx="1" stroke="#fde68a" stroke-width="0.9" fill="#b91c1c"/>
-            <!-- 亭台飞檐剪影 -->
-            <path d="M12 29 L20 22 L28 29 Z" fill="#fbbf24" fill-opacity="0.9"/>
-            <path d="M10.5 29.5 Q20 26.5 29.5 29.5" stroke="#fde68a" stroke-width="1.1" fill="none"/>
-            <line x1="15.5" y1="29.5" x2="15.5" y2="36.5" stroke="#fde68a" stroke-width="1.2"/>
-            <line x1="24.5" y1="29.5" x2="24.5" y2="36.5" stroke="#fde68a" stroke-width="1.2"/>
-            <path d="M12 37 H28" stroke="#fbbf24" stroke-width="1.2" stroke-linecap="round"/>
-            <!-- 底部祥云纹 -->
-            <path d="M13 43 Q16.5 40.5 20 43 T27 43" stroke="#fde68a" stroke-opacity="0.8" stroke-width="1" fill="none"/>
+            <rect x="7" y="2" width="26" height="50" rx="3" fill="url(#${uid})" stroke="#a7f3d0" stroke-width="1.2"/>
+            <!-- 上部红楼亭台与远山工笔剪影 -->
+            <path d="M9 17 Q14 13 19 16 T31 15 L31 24 L9 24 Z" fill="#065f46" fill-opacity="0.18"/>
+            <path d="M13 15 L20 9.5 L27 15 Z" fill="#065f46" fill-opacity="0.65"/>
+            <path d="M11.5 15.2 Q20 12.8 28.5 15.2" stroke="#f59e0b" stroke-width="1" fill="none"/>
+            <line x1="16" y1="15.2" x2="16" y2="20.5" stroke="#065f46" stroke-opacity="0.65" stroke-width="1.1"/>
+            <line x1="24" y1="15.2" x2="24" y2="20.5" stroke="#065f46" stroke-opacity="0.65" stroke-width="1.1"/>
+            <!-- 中部蜿蜒金色琉璃瓦墙分割线 -->
+            <path d="M7 24.5 Q14 21.5 20 24.5 T33 24.5" stroke="#fbbf24" stroke-width="1.8" fill="none"/>
+            <path d="M7 26.2 Q14 23.2 20 26.2 T33 26.2" stroke="#fef3c7" stroke-opacity="0.7" stroke-width="0.7" fill="none"/>
+            <!-- 下部薄荷爆冰珠与冰晶星芒 -->
+            <circle cx="20" cy="36.5" r="5" fill="url(#${uid}_ice)" stroke="#ecfeff" stroke-opacity="0.8" stroke-width="0.9"/>
+            <circle cx="18.3" cy="34.8" r="1.2" fill="#ffffff" fill-opacity="0.85"/>
+            <path d="M12.5 33 L13.5 35 L12.5 37 M27.5 38 L26.5 40 L27.5 42" stroke="#ecfeff" stroke-opacity="0.75" stroke-width="0.9" stroke-linecap="round"/>
+            <line x1="13" y1="46.5" x2="27" y2="46.5" stroke="#fde68a" stroke-opacity="0.8" stroke-width="0.9" stroke-linecap="round"/>
           </svg>`;
       }
 
@@ -941,12 +949,19 @@
     // =========================================================================
     function enrichBrand(b) {
       const def = DEFAULT_BRANDS.find(d => d.id === b.id || d.name === b.name);
+      const migrated = { ...b };
+      // 自动修正此前默认生成的大观园旧配色与标签
+      if (migrated.id === 'b_daguanyuan' && migrated.tag === '细支 · 红楼国风' && migrated.color === '#ef4444') {
+        migrated.tag = def.tag;
+        migrated.color = def.color;
+        if (migrated.price === 40) migrated.price = def.price;
+      }
       return {
-        ...b,
-        tar: (b.tar !== undefined && b.tar !== null && !isNaN(Number(b.tar))) ? Number(b.tar) : (def ? def.tar : 8),
-        nicotine: (b.nicotine !== undefined && b.nicotine !== null && !isNaN(Number(b.nicotine))) ? Number(b.nicotine) : (def ? def.nicotine : 0.8),
-        packStyle: b.packStyle || (def ? def.packStyle : inferPackStyle(b.name)),
-        isFrequent: b.isFrequent !== undefined ? b.isFrequent : true,
+        ...migrated,
+        tar: (migrated.tar !== undefined && migrated.tar !== null && !isNaN(Number(migrated.tar))) ? Number(migrated.tar) : (def ? def.tar : 8),
+        nicotine: (migrated.nicotine !== undefined && migrated.nicotine !== null && !isNaN(Number(migrated.nicotine))) ? Number(migrated.nicotine) : (def ? def.nicotine : 0.8),
+        packStyle: migrated.packStyle || (def ? def.packStyle : inferPackStyle(migrated.name)),
+        isFrequent: migrated.isFrequent !== undefined ? migrated.isFrequent : true,
       };
     }
 
