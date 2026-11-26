@@ -706,7 +706,7 @@
       { id: 'b_ruanhehua', name: '软荷花', price: 50, sticksPerPack: 20, tar: 10, nicotine: 1.0, tag: '三段式 · 软包', color: '#fb7185', packStyle: 'ruanhehua', stockSticks: 0, isFrequent: true },
       { id: 'b_yanyue', name: '颜悦', price: 20, sticksPerPack: 20, tar: 6, nicotine: 0.6, tag: '细支 · 蓝金国风', color: '#f59e0b', packStyle: 'yanyue', stockSticks: 0, isFrequent: true },
       { id: 'b_zhongnanhai', name: '中南海蓝莓', price: 23, sticksPerPack: 20, tar: 5, nicotine: 0.5, tag: '星空 · 蓝莓爆珠', color: '#a78bfa', packStyle: 'zhongnanhai', stockSticks: 0, isFrequent: true },
-      { id: 'b_daguanyuan', name: '大观园', price: 35, sticksPerPack: 20, tar: 6, nicotine: 0.6, tag: '细支 · 爆冰薄荷', color: '#34d399', packStyle: 'daguanyuan', stockSticks: 0, isFrequent: true },
+      { id: 'b_daguanyuan', name: '大观园', price: 30, sticksPerPack: 20, tar: 6, nicotine: 0.6, tag: '细支 · 爆冰薄荷', color: '#34d399', packStyle: 'daguanyuan', stockSticks: 0, isFrequent: true },
       { id: 'b_heiliqun', name: '黑利群', price: 48, sticksPerPack: 20, tar: 8, nicotine: 0.8, tag: '烤烟型 · 阳光硬盒', color: '#94a3b8', packStyle: 'heiliqun', stockSticks: 0, isFrequent: true },
     ];
     const LEGACY_SEEDED_BRAND_IDS = ['b_yinchai', 'b_yinghehua', 'b_ruanhehua', 'b_yanyue', 'b_zhongnanhai'];
@@ -950,11 +950,15 @@
     function enrichBrand(b) {
       const def = DEFAULT_BRANDS.find(d => d.id === b.id || d.name === b.name);
       const migrated = { ...b };
-      // 自动修正此前默认生成的大观园旧配色与标签
-      if (migrated.id === 'b_daguanyuan' && migrated.tag === '细支 · 红楼国风' && migrated.color === '#ef4444') {
-        migrated.tag = def.tag;
-        migrated.color = def.color;
-        if (migrated.price === 40) migrated.price = def.price;
+      // 自动修正此前默认生成的大观园旧配色、标签与价格
+      if (migrated.id === 'b_daguanyuan') {
+        if (migrated.tag === '细支 · 红楼国风' && migrated.color === '#ef4444') {
+          migrated.tag = def.tag;
+          migrated.color = def.color;
+        }
+        if (migrated.price === 40 || migrated.price === 35) {
+          migrated.price = def.price;
+        }
       }
       return {
         ...migrated,
