@@ -220,6 +220,9 @@
       <div class="space-y-4">
         <!-- 动画展示区 -->
         <div class="relative overflow-hidden glass-panel rounded-3xl p-6 sm:p-8 border border-slate-800/80 flex flex-col items-center justify-center text-center min-h-[205px]">
+          <button id="btnRefreshPage" type="button" title="刷新页面" aria-label="刷新页面" class="btn-tap absolute top-3.5 left-3.5 z-20 w-8 h-8 rounded-xl bg-slate-800/70 hover:bg-slate-700/80 border border-slate-700/60 text-slate-400 hover:text-amber-300 flex items-center justify-center transition-colors">
+            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+          </button>
           <div class="absolute -top-16 left-1/2 -translate-x-1/2 w-64 h-64 rounded-full bg-amber-500/10 blur-3xl pointer-events-none"></div>
 
           <div class="relative mb-3 mt-1 flex flex-col items-center">
@@ -271,9 +274,9 @@
 
       <!-- 下半部分: 左右 进货 和 出货 -->
       <div class="grid grid-cols-2 gap-3.5 sm:gap-5 pt-1 pb-2">
-        <button id="btnHomeIn" class="btn-tap group relative overflow-hidden rounded-3xl px-4 py-6 sm:p-6 bg-gradient-to-br from-amber-500/20 via-amber-500/10 to-slate-900 border border-amber-500/35 hover:border-amber-400 text-center flex flex-col items-center justify-center gap-3 min-h-[164px] shadow-lg shadow-amber-500/5">
-          <div class="flex items-center justify-center w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20">
-            <svg class="w-12 h-12 overflow-visible" viewBox="0 0 64 64" fill="none">
+        <button id="btnHomeIn" class="btn-tap group relative overflow-hidden rounded-3xl px-4 py-6 sm:p-6 bg-gradient-to-br from-amber-500/20 via-amber-500/10 to-slate-900 border border-amber-500/35 hover:border-amber-400 text-center flex flex-col items-center justify-center gap-2.5 min-h-[160px] shadow-lg shadow-amber-500/5">
+          <div class="flex items-center justify-center">
+            <svg class="w-14 h-14 overflow-visible" viewBox="0 0 64 64" fill="none">
               <circle class="sparkle-1" cx="14" cy="14" r="2.2" fill="#fbbf24" />
               <circle class="sparkle-2" cx="52" cy="16" r="1.8" fill="#fde68a" />
               <rect x="12" y="38" width="40" height="18" rx="4" fill="#1e293b" stroke="#f59e0b" stroke-width="2" />
@@ -292,9 +295,9 @@
           </div>
         </button>
 
-        <button id="btnHomeOut" class="btn-tap group relative overflow-hidden rounded-3xl px-4 py-6 sm:p-6 bg-gradient-to-br from-rose-500/20 via-orange-500/10 to-slate-900 border border-rose-500/35 hover:border-rose-400 text-center flex flex-col items-center justify-center gap-3 min-h-[164px] shadow-lg shadow-rose-500/5">
-          <div class="flex items-center justify-center w-16 h-16 rounded-2xl bg-rose-500/10 border border-rose-500/20">
-            <svg class="w-12 h-12 overflow-visible" viewBox="0 0 64 64" fill="none">
+        <button id="btnHomeOut" class="btn-tap group relative overflow-hidden rounded-3xl px-4 py-6 sm:p-6 bg-gradient-to-br from-rose-500/20 via-orange-500/10 to-slate-900 border border-rose-500/35 hover:border-rose-400 text-center flex flex-col items-center justify-center gap-2.5 min-h-[160px] shadow-lg shadow-rose-500/5">
+          <div class="flex items-center justify-center">
+            <svg class="w-14 h-14 overflow-visible" viewBox="0 0 64 64" fill="none">
               <path class="smoke-1" d="M48 34 C44 25, 53 19, 47 10" stroke="#fda4af" stroke-opacity="0.65" stroke-width="2" stroke-linecap="round" />
               <path class="smoke-2" d="M52 34 C57 24, 46 16, 53 7" stroke="#fdba74" stroke-opacity="0.5" stroke-width="1.8" stroke-linecap="round" />
               <g transform="rotate(-14 32 42)">
@@ -2211,6 +2214,19 @@
 
       document.querySelectorAll('.nav-tab').forEach(btn => {
         btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+      });
+
+      document.getElementById('btnRefreshPage').addEventListener('click', async () => {
+        const btn = document.getElementById('btnRefreshPage');
+        const icon = btn && btn.querySelector('svg');
+        if (icon) icon.classList.add('animate-spin');
+        try {
+          if ('serviceWorker' in navigator) {
+            const reg = await navigator.serviceWorker.getRegistration();
+            if (reg) await reg.update();
+          }
+        } catch (e) {}
+        location.reload();
       });
 
       document.getElementById('toggleInventoryBtn').addEventListener('click', toggleInventoryAccordion);
